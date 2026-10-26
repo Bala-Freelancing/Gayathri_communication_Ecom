@@ -203,6 +203,7 @@ export function resolveProductImage(
     n.startsWith('I 13') ||
     n.startsWith('I 14')
   ) {
+    if (n.includes('15')) return '/images/products/iphone15.jpg'
     return '/images/products/iphone16.jpg'
   }
 

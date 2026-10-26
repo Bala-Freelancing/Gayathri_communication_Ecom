@@ -7,7 +7,7 @@ export const storeDetails: StoreInfo = {
   landmark: "Near LIC Office",
   phone: "+91 98424 19358",
   whatsapp: "919842419358",
-  email: "contact@gayathricommunication.com",
+  email: "gayathrinath81@gmail.com",
   timing: "10:00 AM – 9:30 PM (Daily)",
   isOpenNow: true,
   instagram: "https://instagram.com/gayathri_communication_",
@@ -93,6 +93,162 @@ export const faqList = [
 ]
 
 export const productsData: Product[] = [
+  {
+    "id": "gc-apple-iphone-16",
+    "name": "Apple iPhone 16",
+    "tagline": "Camera Control, A18 Processor, Apple Intelligence & 48MP Fusion Camera.",
+    "description": "Official Apple iPhone 16 authorized showroom stock at Gayathri Communication. Built for Apple Intelligence, featuring all-new Camera Control, powerful A18 processor, 48MP Fusion camera with 2x optical Telephoto, and aerospace-grade aluminum enclosure.",
+    "brand": "Apple",
+    "category": "smartphones",
+    "badge": "Flagship New Launch",
+    "isBestSeller": true,
+    "isNewLaunch": true,
+    "isDealOfTheDay": false,
+    "originalPrice": 104900,
+    "price": 99999,
+    "rating": 5.0,
+    "reviewCount": 24,
+    "image": "/images/products/iphone16.jpg",
+    "gallery": [
+      "/images/products/iphone16.jpg"
+    ],
+    "emiStartsAt": 4840,
+    "warranty": "1 Year Official Apple India Manufacturer Warranty",
+    "inStock": true,
+    "stockQuantity": 15,
+    "sku": "GC-APL-IPHONE16-128",
+    "specs": [
+      {
+        "label": "Display",
+        "value": "6.1-inch Super Retina XDR OLED with Ceramic Shield latest generation"
+      },
+      {
+        "label": "Camera",
+        "value": "48MP Fusion camera with 2x Telephoto and 12MP Ultra Wide with Macro"
+      },
+      {
+        "label": "Processor",
+        "value": "A18 chip with 6-core CPU, 5-core GPU & Apple Intelligence"
+      },
+      {
+        "label": "Controls",
+        "value": "Camera Control button and Action button"
+      },
+      {
+        "label": "Build",
+        "value": "Aerospace-grade aluminum enclosure with color-infused back glass (IP68)"
+      }
+    ],
+    "highlights": [
+      "Display: 6.1-inch Super Retina XDR OLED with Ceramic Shield",
+      "Camera: 48MP Fusion camera with 2x Telephoto & Macro",
+      "Processor: A18 chip with Apple Intelligence"
+    ],
+    "variants": [
+      {
+        "id": "var-apple-ip16-128",
+        "sku": "GC-APL-IP16-128",
+        "name": "128GB Storage",
+        "price": 99999,
+        "originalPrice": 104900,
+        "stockQuantity": 10,
+        "inStock": true,
+        "attributes": {
+          "storage": "128GB"
+        }
+      },
+      {
+        "id": "var-apple-ip16-256",
+        "sku": "GC-APL-IP16-256",
+        "name": "256GB Storage",
+        "price": 109999,
+        "originalPrice": 114900,
+        "stockQuantity": 5,
+        "inStock": true,
+        "attributes": {
+          "storage": "256GB"
+        }
+      }
+    ]
+  },
+  {
+    "id": "gc-apple-iphone-15",
+    "name": "Apple iPhone 15",
+    "tagline": "Dynamic Island, 48MP Main Camera, A16 Bionic & USB-C.",
+    "description": "Official Apple iPhone 15 authorized showroom stock at Gayathri Communication. Features Dynamic Island, durable color-infused back glass design, 48MP main camera with 2x Telephoto, A16 Bionic chip, and universal USB-C charging.",
+    "brand": "Apple",
+    "category": "smartphones",
+    "badge": "Authorized Apple Stock",
+    "isBestSeller": true,
+    "isNewLaunch": false,
+    "isDealOfTheDay": true,
+    "originalPrice": 79900,
+    "price": 74999,
+    "rating": 4.9,
+    "reviewCount": 32,
+    "image": "/images/products/iphone15.jpg",
+    "gallery": [
+      "/images/products/iphone15.jpg"
+    ],
+    "emiStartsAt": 3630,
+    "warranty": "1 Year Official Apple India Manufacturer Warranty",
+    "inStock": true,
+    "stockQuantity": 12,
+    "sku": "GC-APL-IPHONE15-128",
+    "specs": [
+      {
+        "label": "Display",
+        "value": "6.1-inch Super Retina XDR OLED with Dynamic Island"
+      },
+      {
+        "label": "Camera",
+        "value": "48MP Main + 12MP Ultra Wide with 2x Optical Quality Telephoto"
+      },
+      {
+        "label": "Processor",
+        "value": "A16 Bionic chip with 5-core GPU"
+      },
+      {
+        "label": "Port",
+        "value": "USB-C with fast charging support"
+      },
+      {
+        "label": "Build",
+        "value": "Ceramic Shield front, color-infused glass back & aluminum frame (IP68)"
+      }
+    ],
+    "highlights": [
+      "Display: 6.1-inch Super Retina XDR OLED with Dynamic Island",
+      "Camera: 48MP Main + 12MP Ultra Wide with 2x Telephoto",
+      "Processor: A16 Bionic chip with 5-core GPU"
+    ],
+    "variants": [
+      {
+        "id": "var-apple-ip15-128",
+        "sku": "GC-APL-IP15-128",
+        "name": "128GB Storage",
+        "price": 74999,
+        "originalPrice": 79900,
+        "stockQuantity": 8,
+        "inStock": true,
+        "attributes": {
+          "storage": "128GB"
+        }
+      },
+      {
+        "id": "var-apple-ip15-256",
+        "sku": "GC-APL-IP15-256",
+        "name": "256GB Storage",
+        "price": 84999,
+        "originalPrice": 89900,
+        "stockQuantity": 4,
+        "inStock": true,
+        "attributes": {
+          "storage": "256GB"
+        }
+      }
+    ]
+  },
   {
     "id": "gc-infinix-x20-wireless-speaker",
     "name": "Infinix X20 Wireless Speaker",
