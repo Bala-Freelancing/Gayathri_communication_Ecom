@@ -31,14 +31,18 @@ export const StoresModal: React.FC<StoresModalProps> = ({ isOpen, onClose }) => 
         </button>
 
         <div>
+          <div className="mb-3">
+            <img 
+              src="/images/gayathri-logo.png" 
+              alt="Gayathri Communication - Mobiles & Home Appliances" 
+              className="h-11 sm:h-12 w-auto object-contain"
+            />
+          </div>
           <span className="text-[10px] uppercase tracking-wider font-bold text-neutral-700 bg-neutral-100 border border-neutral-200 px-3 py-1 rounded-full">
-            Flagship Experience Center
+            Flagship Experience Center • Manachanallur
           </span>
-          <h3 className="text-2xl font-bold font-['Outfit'] mt-3 text-neutral-900">
-            {storeDetails.name}
-          </h3>
-          <p className="text-xs text-neutral-600 mt-1.5">
-            Visit us in person to test flagships, get free data transfer, and instant 10-minute EMI approval.
+          <p className="text-xs text-neutral-600 mt-2.5">
+            Visit us in person to test flagships, get free data transfer, and instant unboxing.
           </p>
         </div>
 

@@ -37,6 +37,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
 
   const navItems = [
     { label: 'Dashboard', path: '/admin', icon: LayoutDashboard },
+    { label: 'Hero Banners', path: '/admin/banners', icon: Sparkles },
     { label: 'Stock Import (Excel)', path: '/admin/import', icon: FileSpreadsheet, highlight: true },
     { label: 'Price Management', path: '/admin/prices', icon: Tag },
     { label: 'Product Catalog', path: '/admin/products', icon: Package },
@@ -57,12 +58,14 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
       {/* Mobile Top Header */}
       <div className="md:hidden flex items-center justify-between p-4 border-b border-slate-800 bg-slate-950/90 backdrop-blur-md sticky top-0 z-40">
         <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-cyan-500 to-blue-600 p-[1px]">
-            <div className="w-full h-full bg-slate-950 rounded-[11px] flex items-center justify-center font-extrabold text-cyan-400 font-['Outfit'] text-sm">
-              GC
-            </div>
+          <div className="bg-white px-2 py-1 rounded-lg">
+            <img 
+              src="/images/gayathri-logo.png" 
+              alt="Gayathri Communication" 
+              className="h-6 w-auto object-contain"
+            />
           </div>
-          <span className="font-bold text-sm tracking-tight text-white font-['Outfit']">
+          <span className="font-bold text-xs tracking-tight text-cyan-400 uppercase">
             Admin Suite
           </span>
         </div>
@@ -84,26 +87,21 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
       >
         <div className="space-y-6">
           {/* Logo & Showroom Title */}
-          <div className="flex items-center gap-3 px-2">
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-cyan-500 via-blue-600 to-indigo-600 p-[1px] shadow-lg shadow-cyan-500/20">
-              <div className="w-full h-full bg-slate-950 rounded-[15px] flex items-center justify-center">
-                <span className="font-extrabold text-cyan-400 font-['Outfit'] text-lg">
-                  GC
-                </span>
-              </div>
+          <div className="space-y-2 px-1">
+            <div className="bg-white px-2.5 py-1.5 rounded-xl shadow-sm inline-block">
+              <img 
+                src="/images/gayathri-logo.png" 
+                alt="Gayathri Communication" 
+                className="h-7 w-auto object-contain"
+              />
             </div>
-            <div>
-              <div className="flex items-center gap-1.5">
-                <span className="font-extrabold text-base tracking-tight text-white font-['Outfit']">
-                  GAYATHRI
-                </span>
-                <span className="text-[10px] bg-cyan-950 border border-cyan-800/50 text-cyan-400 px-1.5 py-0.2 rounded font-bold uppercase">
-                  Admin
-                </span>
-              </div>
-              <p className="text-[10px] text-slate-400 uppercase tracking-wider">
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] bg-cyan-950 border border-cyan-800/50 text-cyan-400 px-2 py-0.5 rounded font-bold uppercase tracking-wider">
+                Admin Suite
+              </span>
+              <span className="text-[10px] text-slate-400">
                 Management Portal
-              </p>
+              </span>
             </div>
           </div>
 
@@ -111,7 +109,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
           <nav className="space-y-1.5 pt-2">
             {navItems.map((item) => {
               const Icon = item.icon
-              const isActive = location.pathname === item.path
+              const isActive = location.pathname === item.path || (item.path === '/admin/banners' && location.pathname === '/admin/banner')
               return (
                 <Link
                   key={item.path}

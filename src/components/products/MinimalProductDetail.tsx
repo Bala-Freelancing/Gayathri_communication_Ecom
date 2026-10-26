@@ -20,29 +20,42 @@ interface MinimalProductDetailProps {
 export const MinimalProductDetail: React.FC<MinimalProductDetailProps> = ({ product, onClose }) => {
   const { addToCart, setIsCartOpen, generateProductInquiryUrl } = useCartStore()
   const [selectedImageIndex, setSelectedImageIndex] = useState(0)
-  const [selectedStorage, setSelectedStorage] = useState<string>('256 GB')
+  const [selectedVariantIndex, setSelectedVariantIndex] = useState(0)
 
   if (!product) return null
+
+  // Extract variants with separate pricing
+  const concreteVariants = (product.variants && product.variants.length > 0)
+    ? product.variants.map((v, i) => ({
+        id: v.id || `var-${i}`,
+        name: v.name,
+        price: v.price ?? product.price,
+        originalPrice: v.originalPrice ?? product.originalPrice,
+        inStock: v.inStock ?? product.inStock,
+        stockQuantity: v.stockQuantity ?? product.stockQuantity ?? 10,
+        options: v.options,
+      }))
+    : []
+
+  const activeVariant = concreteVariants[selectedVariantIndex] || null
+  const currentPrice = activeVariant ? activeVariant.price : product.price
+  const currentOriginalPrice = activeVariant?.originalPrice && activeVariant.originalPrice > 0
+    ? activeVariant.originalPrice
+    : product.originalPrice
 
   const images = product.gallery && product.gallery.length > 0 ? product.gallery : [product.image]
   const currentImage = images[selectedImageIndex] || product.image
 
-  const storageOptions = product.variants?.find((v) => v.name.toLowerCase().includes('storage'))?.options || [
-    '128 GB',
-    '256 GB',
-    '512 GB',
-    '1 TB',
-  ]
-
   const handleBuyNow = () => {
-    addToCart(product, selectedStorage)
+    const variantLabel = activeVariant?.name || undefined
+    addToCart(product, variantLabel, 1, currentPrice, currentOriginalPrice)
     onClose()
     setIsCartOpen(true)
   }
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-black/40 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6">
-      {/* Main White Card Frame matching Image 4 */}
+      {/* Main White Card Frame */}
       <div className="relative w-full max-w-5xl bg-white rounded-[32px] sm:rounded-[36px] shadow-2xl p-6 sm:p-10 md:p-12 overflow-hidden text-neutral-900 border border-neutral-100">
         
         {/* Close Button */}
@@ -53,13 +66,13 @@ export const MinimalProductDetail: React.FC<MinimalProductDetailProps> = ({ prod
           <X className="w-5 h-5" />
         </button>
 
-        {/* 2-Column Product Layout matching Image 4 */}
+        {/* 2-Column Product Layout */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start">
           
-          {/* Left Column: Vertical Thumbnails + Main Photo (Col-7) */}
+          {/* Left Column: Vertical Thumbnails + Main Photo */}
           <div className="lg:col-span-7 flex flex-col sm:flex-row gap-4 items-center sm:items-start justify-center">
             
-            {/* Vertical Thumbnail Strip matching Image 4 */}
+            {/* Vertical Thumbnail Strip */}
             <div className="flex sm:flex-col items-center gap-2 order-2 sm:order-1">
               <button
                 onClick={() => setSelectedImageIndex((prev) => Math.max(0, prev - 1))}
@@ -104,7 +117,7 @@ export const MinimalProductDetail: React.FC<MinimalProductDetailProps> = ({ prod
               </button>
             </div>
 
-            {/* Main Product Isolated Photo matching Image 4 */}
+            {/* Main Product Isolated Photo */}
             <div className="flex-1 w-full aspect-square max-w-md rounded-2xl bg-[#f8f9fa] flex items-center justify-center p-8 order-1 sm:order-2">
               <img
                 src={currentImage}
@@ -121,7 +134,7 @@ export const MinimalProductDetail: React.FC<MinimalProductDetailProps> = ({ prod
 
           </div>
 
-          {/* Right Column: Title, Price, Sizes, Buy Now, Description & Accordions (Col-5) */}
+          {/* Right Column: Title, Dynamic Price, Flipkart/Amazon Variant Cards, Buy Now */}
           <div className="lg:col-span-5 space-y-5 text-left">
             <div>
               <h2 className="text-xl sm:text-2xl font-bold text-neutral-900 font-['Outfit'] tracking-tight">
@@ -130,45 +143,70 @@ export const MinimalProductDetail: React.FC<MinimalProductDetailProps> = ({ prod
               <p className="text-xs sm:text-sm text-neutral-500 mt-0.5">
                 {getCategoryDisplayName(product.category)}
               </p>
-              <p className="text-lg sm:text-xl font-bold text-neutral-900 mt-2 font-['Outfit']">
-                {formatINR(product.price)}
-              </p>
-            </div>
-
-            {/* Sizes / Storage Selector matching Image 4 */}
-            <div>
-              <div className="flex items-center justify-between text-xs text-neutral-600 mb-2">
-                <span className="font-semibold">Storage / Size</span>
-                <span className="text-neutral-400">Official Specification</span>
-              </div>
-              <div className="grid grid-cols-4 gap-2">
-                {storageOptions.map((opt) => (
-                  <button
-                    key={opt}
-                    onClick={() => setSelectedStorage(opt)}
-                    className={`py-2 px-2 rounded-xl text-xs font-semibold text-center transition-all ${
-                      selectedStorage === opt
-                        ? 'bg-neutral-900 text-white'
-                        : 'bg-neutral-100 text-neutral-700 hover:bg-neutral-200/80'
-                    }`}
-                  >
-                    {opt}
-                  </button>
-                ))}
+              
+              <div className="flex items-baseline gap-2 mt-2">
+                <span className="text-2xl sm:text-3xl font-extrabold text-neutral-900 font-['Outfit']">
+                  {formatINR(currentPrice)}
+                </span>
+                {currentOriginalPrice > currentPrice && (
+                  <span className="text-sm text-neutral-400 line-through">
+                    MRP {formatINR(currentOriginalPrice)}
+                  </span>
+                )}
               </div>
             </div>
 
-            {/* Blue Pill Buy Now Button matching Image 4 */}
+            {/* Flipkart / Amazon Style Variants Selector */}
+            {concreteVariants.length > 0 && (
+              <div>
+                <div className="flex items-center justify-between text-xs text-neutral-600 mb-2">
+                  <span className="font-bold text-neutral-900 uppercase tracking-wider text-[11px]">
+                    Select Variant / Storage
+                  </span>
+                  {activeVariant && (
+                    <span className="text-neutral-500 font-medium text-[11px]">
+                      {activeVariant.name} • {formatINR(currentPrice)}
+                    </span>
+                  )}
+                </div>
+                
+                <div className="grid grid-cols-2 gap-2">
+                  {concreteVariants.map((v, idx) => {
+                    const isSelected = selectedVariantIndex === idx
+                    return (
+                      <button
+                        key={v.id}
+                        onClick={() => setSelectedVariantIndex(idx)}
+                        className={`p-3 rounded-2xl text-left border transition-all cursor-pointer ${
+                          isSelected
+                            ? 'bg-neutral-900 text-white border-neutral-900 shadow-sm'
+                            : 'bg-neutral-50 text-neutral-800 border-neutral-200 hover:bg-neutral-100 hover:border-neutral-300'
+                        }`}
+                      >
+                        <div className="text-xs font-bold font-['Outfit'] line-clamp-1">
+                          {v.name}
+                        </div>
+                        <div className={`text-sm font-extrabold mt-1 font-['Outfit'] ${isSelected ? 'text-white' : 'text-neutral-900'}`}>
+                          {formatINR(v.price)}
+                        </div>
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Buy Now & WhatsApp Actions */}
             <div className="pt-1 flex flex-col sm:flex-row gap-2">
               <button
                 onClick={handleBuyNow}
-                className="flex-1 py-3 px-6 rounded-full bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm shadow-md active:scale-95 transition-all text-center"
+                className="flex-1 py-3 px-6 rounded-full bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm shadow-md active:scale-95 transition-all text-center cursor-pointer"
               >
-                Buy now
+                Buy now {activeVariant ? `(${activeVariant.name})` : ''}
               </button>
 
               <a
-                href={generateProductInquiryUrl(product)}
+                href={generateProductInquiryUrl(product, activeVariant?.name, currentPrice)}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center justify-center gap-1.5 py-3 px-5 rounded-full bg-emerald-500 hover:bg-emerald-600 text-white font-semibold text-sm shadow-md active:scale-95 transition-all"

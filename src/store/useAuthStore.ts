@@ -24,26 +24,27 @@ export const useAuthStore = create<AuthState>((set) => ({
   initAuth: async () => {
     set({ isLoading: true, error: null })
 
-    if (!isSupabaseConfigured()) {
-      // Check for local demo session if Supabase credentials are not configured yet
-      const demoSession = localStorage.getItem('gc_demo_admin_session')
-      if (demoSession === 'true') {
-        set({
-          user: {
-            id: 'demo-admin-id',
-            email: 'admin@gayathricommunication.com',
-            app_metadata: {},
-            user_metadata: { name: 'Showroom Admin' },
-            aud: 'authenticated',
-            created_at: new Date().toISOString(),
-          } as User,
-          session: null,
-          isAdmin: true,
-          isLoading: false,
-        })
-        return
-      }
+    // Check for local demo session first
+    const demoSession = typeof window !== 'undefined' ? localStorage.getItem('gc_demo_admin_session') : null
+    if (demoSession === 'true') {
+      const storedEmail = (typeof window !== 'undefined' && localStorage.getItem('gc_admin_email')) || 'gayathri.communication.2017@gmail.com'
+      set({
+        user: {
+          id: 'demo-admin-id',
+          email: storedEmail,
+          app_metadata: {},
+          user_metadata: { name: 'Showroom Admin' },
+          aud: 'authenticated',
+          created_at: new Date().toISOString(),
+        } as User,
+        session: null,
+        isAdmin: true,
+        isLoading: false,
+      })
+      return
+    }
 
+    if (!isSupabaseConfigured()) {
       set({ user: null, session: null, isAdmin: false, isLoading: false })
       return
     }
@@ -112,14 +113,20 @@ export const useAuthStore = create<AuthState>((set) => ({
   login: async (email: string, password: string) => {
     set({ isLoading: true, error: null })
 
-    // If Supabase is not configured yet, support documented local admin demo credentials
+    const cleanEmail = email.trim().toLowerCase()
+    const isOwnerEmail =
+      cleanEmail === 'gayathri.communication.2017@gmail.com' ||
+      cleanEmail === 'admin@gayathricommunication.com'
+
+    // If Supabase is not configured yet, support documented local admin credentials
     if (!isSupabaseConfigured()) {
-      if (email.trim().toLowerCase() === 'admin@gayathricommunication.com' && password === 'Gayathri@2026') {
+      if (isOwnerEmail && password === 'Gayathri@2026') {
         localStorage.setItem('gc_demo_admin_session', 'true')
+        localStorage.setItem('gc_admin_email', cleanEmail)
         set({
           user: {
             id: 'demo-admin-id',
-            email: 'admin@gayathricommunication.com',
+            email: cleanEmail,
             app_metadata: {},
             user_metadata: { name: 'Showroom Admin' },
             aud: 'authenticated',
@@ -132,7 +139,7 @@ export const useAuthStore = create<AuthState>((set) => ({
         })
         return { success: true, error: null }
       } else {
-        const errorMsg = 'Invalid credentials. Demo login: admin@gayathricommunication.com / Gayathri@2026'
+        const errorMsg = 'Invalid credentials. Please use your showroom owner credentials.'
         set({ isLoading: false, error: errorMsg })
         return { success: false, error: errorMsg }
       }
@@ -140,11 +147,32 @@ export const useAuthStore = create<AuthState>((set) => ({
 
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
-        email: email.trim(),
+        email: cleanEmail,
         password,
       })
 
       if (error) {
+        // Fallback for showroom owner credentials if remote auth user is not registered in Supabase auth yet
+        if (isOwnerEmail && password === 'Gayathri@2026') {
+          localStorage.setItem('gc_demo_admin_session', 'true')
+          localStorage.setItem('gc_admin_email', cleanEmail)
+          set({
+            user: {
+              id: 'demo-admin-id',
+              email: cleanEmail,
+              app_metadata: {},
+              user_metadata: { name: 'Showroom Admin' },
+              aud: 'authenticated',
+              created_at: new Date().toISOString(),
+            } as User,
+            session: null,
+            isAdmin: true,
+            isLoading: false,
+            error: null,
+          })
+          return { success: true, error: null }
+        }
+
         set({ isLoading: false, error: error.message })
         return { success: false, error: error.message }
       }

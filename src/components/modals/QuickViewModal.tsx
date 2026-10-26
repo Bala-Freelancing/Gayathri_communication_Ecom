@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useMemo, useEffect } from 'react'
 import { 
   Dialog, 
   DialogContent, 
@@ -14,7 +14,8 @@ import {
   ShieldCheck, 
   Star, 
   Check, 
-  CreditCard
+  Layers,
+  Sparkles
 } from 'lucide-react'
 
 export const QuickViewModal: React.FC = () => {
@@ -26,63 +27,114 @@ export const QuickViewModal: React.FC = () => {
   } = useCartStore()
 
   const [selectedImage, setSelectedImage] = useState<string | null>(null)
-  const [selectedVariant, setSelectedVariant] = useState<string>('')
+  const [selectedVariantIndex, setSelectedVariantIndex] = useState(0)
   const [isAdded, setIsAdded] = useState(false)
+
+  // Reset variant & image preview when active product changes
+  useEffect(() => {
+    setSelectedVariantIndex(0)
+    setSelectedImage(null)
+    setIsAdded(false)
+  }, [quickViewProduct?.id])
+
+  // Extract structured variants (supporting Flipkart / Amazon separate price per variant)
+  const concreteVariants = useMemo(() => {
+    if (!quickViewProduct?.variants || quickViewProduct.variants.length === 0) return []
+
+    // Backwards compatibility: if variant has options array and no price
+    const first = quickViewProduct.variants[0]
+    if (first.options && Array.isArray(first.options) && first.price === undefined) {
+      return first.options.map((opt, i) => ({
+        id: `var-opt-${i}`,
+        name: opt,
+        price: quickViewProduct.price,
+        originalPrice: quickViewProduct.originalPrice,
+        inStock: quickViewProduct.inStock,
+        stockQuantity: quickViewProduct.stockQuantity ?? 10,
+      }))
+    }
+
+    return quickViewProduct.variants.map((v, i) => ({
+      id: v.id || `var-${i}`,
+      name: v.name,
+      price: v.price ?? quickViewProduct.price,
+      originalPrice: v.originalPrice ?? quickViewProduct.originalPrice,
+      inStock: v.inStock ?? quickViewProduct.inStock,
+      stockQuantity: v.stockQuantity ?? quickViewProduct.stockQuantity ?? 10,
+      attributes: v.attributes,
+    }))
+  }, [quickViewProduct])
 
   if (!quickViewProduct) return null
 
-  const activeImage = selectedImage || quickViewProduct.image
-  const discountPercent = quickViewProduct.originalPrice > quickViewProduct.price
-    ? Math.round(
-        ((quickViewProduct.originalPrice - quickViewProduct.price) / quickViewProduct.originalPrice) * 100
-      )
+  // Resolve current active variant or fallback to parent product
+  const activeVariant = concreteVariants.length > 0 ? concreteVariants[selectedVariantIndex] : null
+  const currentPrice = activeVariant ? activeVariant.price : quickViewProduct.price
+  const currentOriginalPrice = activeVariant?.originalPrice && activeVariant.originalPrice > 0
+    ? activeVariant.originalPrice
+    : quickViewProduct.originalPrice
+  const currentStockQuantity = activeVariant?.stockQuantity ?? quickViewProduct.stockQuantity ?? 10
+  const isOutOfStock = !quickViewProduct.inStock || (activeVariant ? !activeVariant.inStock || currentStockQuantity === 0 : currentStockQuantity === 0)
+
+  const discountPercent = currentOriginalPrice > currentPrice
+    ? Math.round(((currentOriginalPrice - currentPrice) / currentOriginalPrice) * 100)
     : 0
 
-  const isOutOfStock = !quickViewProduct.inStock || quickViewProduct.stockQuantity === 0
+  const activeImage = selectedImage || quickViewProduct.image
 
   const handleAddToCart = () => {
     if (isOutOfStock) return
-    addToCart(quickViewProduct, selectedVariant || undefined)
+    const variantLabel = activeVariant?.name || undefined
+    addToCart(quickViewProduct, variantLabel, 1, currentPrice, currentOriginalPrice)
     setIsAdded(true)
     setTimeout(() => setIsAdded(false), 1500)
   }
 
   return (
     <Dialog open={!!quickViewProduct} onOpenChange={(open) => !open && setQuickViewProduct(null)}>
-      <DialogContent className="max-w-4xl p-6 sm:p-8">
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-start">
+      <DialogContent className="max-w-3xl lg:max-w-4xl w-[94vw] p-5 sm:p-7 max-h-[88vh] overflow-y-auto rounded-3xl">
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-6 sm:gap-8 items-start">
           
           {/* Left: Gallery & Image Preview */}
-          <div className="md:col-span-6 space-y-3">
-            <div className="relative aspect-square w-full overflow-hidden rounded-2xl bg-neutral-50 border border-neutral-200/90 p-4 flex items-center justify-center">
+          <div className="md:col-span-5 space-y-3">
+            <div className="relative aspect-square w-full overflow-hidden rounded-2xl bg-neutral-50/90 border border-neutral-200/80 p-4 flex items-center justify-center">
               <img
                 src={activeImage}
                 alt={quickViewProduct.name}
-                className="max-h-full max-w-full object-contain drop-shadow-sm"
+                className="max-h-full max-w-full object-contain drop-shadow-sm transition-transform duration-300"
               />
               {isOutOfStock ? (
                 <div className="absolute top-3 left-3">
-                  <span className="text-xs font-bold text-white bg-rose-600 px-3 py-1 rounded-full shadow-2xs uppercase tracking-wider">
+                  <span className="text-[11px] font-bold text-white bg-rose-600 px-2.5 py-0.5 rounded-md shadow-xs uppercase tracking-wider">
                     Out of Stock
                   </span>
                 </div>
               ) : discountPercent > 0 && (
                 <div className="absolute top-3 left-3">
-                  <span className="text-xs font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-full shadow-2xs">
+                  <span className="text-[11px] font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-md shadow-xs">
                     Save {discountPercent}% Off
+                  </span>
+                </div>
+              )}
+
+              {concreteVariants.length > 1 && (
+                <div className="absolute bottom-3 left-3">
+                  <span className="text-[10px] font-semibold text-neutral-800 bg-white/95 backdrop-blur-sm border border-neutral-200/80 px-2 py-0.5 rounded-md shadow-xs flex items-center gap-1.5">
+                    <Layers className="w-3 h-3 text-blue-600" />
+                    <span>{concreteVariants.length} Variants Available</span>
                   </span>
                 </div>
               )}
             </div>
 
             {/* Thumbnail switcher if gallery exists */}
-            {quickViewProduct.gallery.length > 1 && (
+            {quickViewProduct.gallery && quickViewProduct.gallery.length > 1 && (
               <div className="flex gap-2 overflow-x-auto pb-1">
                 {quickViewProduct.gallery.map((img, idx) => (
                   <button
                     key={idx}
                     onClick={() => setSelectedImage(img)}
-                    className={`w-16 h-16 rounded-xl border p-1 bg-neutral-50 shrink-0 transition-all ${
+                    className={`w-14 h-14 rounded-xl border p-1 bg-neutral-50 shrink-0 transition-all ${
                       activeImage === img
                         ? 'border-neutral-900 ring-2 ring-neutral-900/10'
                         : 'border-neutral-200 hover:border-neutral-400'
@@ -94,109 +146,135 @@ export const QuickViewModal: React.FC = () => {
               </div>
             )}
 
-            {/* Warranty & Store Trust Pill */}
-            <div className="p-3.5 rounded-xl bg-neutral-50 border border-neutral-200/80 text-xs text-neutral-700 space-y-1">
-              <div className="flex items-center gap-1.5 text-neutral-900 font-semibold">
+            {/* Warranty & Store Trust Card */}
+            <div className="p-3 rounded-xl bg-neutral-50/80 border border-neutral-200/70 text-xs text-neutral-700">
+              <div className="flex items-center gap-1.5 text-neutral-900 font-semibold text-xs">
                 <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
-                <span>{quickViewProduct.warranty}</span>
+                <span>{quickViewProduct.warranty || '1 Year Official Brand Warranty'}</span>
               </div>
-              <p className="text-[11px] text-neutral-500 pl-5 leading-relaxed">
-                Eligible for official brand warranty at any authorized service center across India with GST invoice.
+              <p className="text-[11px] text-neutral-500 mt-1 leading-relaxed pl-5">
+                Official brand sealed box with genuine GST invoice & instant counter billing in Manachanallur.
               </p>
             </div>
           </div>
 
-          {/* Right: Product Details & Specs */}
-          <div className="md:col-span-6 space-y-5 text-left">
-            <div>
-              <div className="flex items-center justify-between mb-1.5">
-                <span className="text-xs uppercase font-extrabold tracking-wider text-neutral-500">
-                  {quickViewProduct.brand} • Authorized Retail
+          {/* Right: Product Details, Variants & Actions */}
+          <div className="md:col-span-7 space-y-3.5 text-left pr-1 sm:pr-2">
+            
+            {/* Header: Brand, Title, Rating (with pr-10 clearance for Close Button) */}
+            <div className="pr-10">
+              <div className="flex items-center gap-2 flex-wrap mb-1">
+                <span className="text-[11px] uppercase font-bold tracking-wider text-neutral-500 bg-neutral-100 px-2 py-0.5 rounded">
+                  {quickViewProduct.brand} • Authorized Showroom
                 </span>
-                <div className="flex items-center gap-1 text-neutral-700 font-semibold text-xs">
-                  <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
-                  <span>{quickViewProduct.rating}</span>
-                  <span className="text-neutral-400">({quickViewProduct.reviewCount} reviews)</span>
+                <div className="flex items-center gap-1 text-neutral-700 font-semibold text-xs bg-amber-50/80 border border-amber-200/60 px-2 py-0.5 rounded">
+                  <Star className="w-3 h-3 text-amber-500 fill-amber-500" />
+                  <span>{quickViewProduct.rating || 4.8}</span>
+                  <span className="text-neutral-400 font-normal">({quickViewProduct.reviewCount || 15})</span>
                 </div>
               </div>
 
-              <DialogTitle className="text-xl sm:text-2xl font-bold text-neutral-900 font-['Outfit']">
+              <DialogTitle className="text-xl sm:text-2xl font-bold text-neutral-900 font-['Outfit'] tracking-tight">
                 {quickViewProduct.name}
               </DialogTitle>
-              <DialogDescription className="text-xs sm:text-sm text-neutral-600 mt-1">
+              <DialogDescription className="text-xs sm:text-sm text-neutral-600 mt-0.5 line-clamp-2">
                 {quickViewProduct.tagline || quickViewProduct.description}
               </DialogDescription>
             </div>
 
-            {/* Price & EMI Box */}
-            <div className="p-4 rounded-xl bg-neutral-50 border border-neutral-200/80 space-y-2">
-              <div className="flex items-baseline gap-3">
-                <span className="text-2xl sm:text-3xl font-extrabold text-neutral-900 font-['Outfit']">
-                  {formatINR(quickViewProduct.price)}
+            {/* Dynamic Price Box (Clean, responsive layout) */}
+            <div className="p-3.5 rounded-2xl bg-neutral-50/90 border border-neutral-200/80 space-y-1.5">
+              <div className="flex items-baseline gap-2.5 flex-wrap">
+                <span className="text-2xl sm:text-3xl font-extrabold text-neutral-900 font-['Outfit'] tracking-tight">
+                  {formatINR(currentPrice)}
                 </span>
-                {quickViewProduct.originalPrice > quickViewProduct.price && (
-                  <span className="text-sm text-neutral-400 line-through">
-                    {formatINR(quickViewProduct.originalPrice)}
+                {currentOriginalPrice > currentPrice && (
+                  <span className="text-xs sm:text-sm text-neutral-400 line-through">
+                    MRP {formatINR(currentOriginalPrice)}
                   </span>
                 )}
                 {discountPercent > 0 && (
-                  <span className="text-xs text-emerald-700 font-bold">
-                    Save {formatINR(quickViewProduct.originalPrice - quickViewProduct.price)}
+                  <span className="text-xs text-emerald-800 font-bold bg-emerald-50 border border-emerald-200/80 px-2 py-0.5 rounded-md">
+                    Save {formatINR(currentOriginalPrice - currentPrice)} ({discountPercent}% Off)
                   </span>
                 )}
               </div>
 
-              {quickViewProduct.emiStartsAt > 0 && (
-                <div className="flex items-center gap-2 text-xs text-neutral-600 font-medium">
-                  <CreditCard className="w-4 h-4 text-neutral-500 shrink-0" />
-                  <span>
-                    No-Cost EMI available from <strong className="text-neutral-900">{formatINR(quickViewProduct.emiStartsAt)}/month</strong>
-                  </span>
-                </div>
-              )}
+              <div className="flex items-center gap-1.5 text-xs text-emerald-700 font-medium">
+                <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                <span>100% Brand Sealed • Showroom Guarantee & GST Invoice</span>
+              </div>
             </div>
 
-            {/* Variant Selector (if any) */}
-            {quickViewProduct.variants && quickViewProduct.variants.length > 0 && (
-              <div className="space-y-3">
-                {quickViewProduct.variants.map((v, i) => (
-                  <div key={i}>
-                    <p className="text-xs font-semibold text-neutral-700 mb-1.5">
-                      Select {v.name}:
-                    </p>
-                    <div className="flex flex-wrap gap-2">
-                      {v.options.map((opt) => (
-                        <button
-                          key={opt}
-                          onClick={() => setSelectedVariant(opt)}
-                          className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all ${
-                            selectedVariant === opt
-                              ? 'border-neutral-900 bg-neutral-900 text-white shadow-2xs'
-                              : 'border-neutral-300 bg-white text-neutral-700 hover:bg-neutral-50'
-                          }`}
-                        >
-                          {opt}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                ))}
+            {/* Flipkart / Amazon Style Variant Selector (Compact, Non-Overflowing Grid) */}
+            {concreteVariants.length > 0 && (
+              <div className="space-y-2 pt-0.5">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="font-bold text-neutral-700 uppercase tracking-wider text-[10px] flex items-center gap-1.5">
+                    <Sparkles className="w-3 h-3 text-blue-600" />
+                    Select Variant:
+                  </span>
+                  {activeVariant && (
+                    <span className="text-[11px] font-semibold text-neutral-800">
+                      Selected: <strong>{activeVariant.name}</strong>
+                    </span>
+                  )}
+                </div>
+
+                {/* Sleek Variant Pills that never overflow */}
+                <div className="flex flex-wrap gap-2">
+                  {concreteVariants.map((v, idx) => {
+                    const isSelected = selectedVariantIndex === idx
+                    const vOutOfStock = !v.inStock || v.stockQuantity === 0
+
+                    return (
+                      <button
+                        key={v.id || idx}
+                        type="button"
+                        disabled={vOutOfStock}
+                        onClick={() => setSelectedVariantIndex(idx)}
+                        className={`px-3 py-2 rounded-xl text-left border transition-all cursor-pointer flex items-center gap-2 ${
+                          isSelected
+                            ? 'border-neutral-900 bg-neutral-900 text-white shadow-sm ring-1 ring-neutral-900'
+                            : vOutOfStock
+                            ? 'border-neutral-200 bg-neutral-50/50 text-neutral-400 opacity-60 cursor-not-allowed'
+                            : 'border-neutral-300 bg-white text-neutral-800 hover:border-neutral-400 hover:bg-neutral-50'
+                        }`}
+                      >
+                        <span className="text-xs font-bold font-['Outfit']">
+                          {v.name}
+                        </span>
+                        <span className={`text-xs font-semibold ${isSelected ? 'text-emerald-300' : 'text-neutral-950 font-bold'}`}>
+                          {formatINR(v.price)}
+                        </span>
+                        {isSelected && (
+                          <Check className="w-3.5 h-3.5 text-emerald-400 stroke-[3] ml-0.5" />
+                        )}
+                        {vOutOfStock && (
+                          <span className="text-[9px] font-bold text-rose-500 uppercase ml-1">
+                            Sold Out
+                          </span>
+                        )}
+                      </button>
+                    )
+                  })}
+                </div>
               </div>
             )}
 
-            {/* Key Specs Grid */}
+            {/* Key Specs Grid (Balanced 2-column cards with natural line wrapping) */}
             {quickViewProduct.specs && quickViewProduct.specs.length > 0 && (
-              <div>
-                <p className="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-2">
+              <div className="pt-0.5">
+                <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider mb-1.5">
                   Technical Highlights
                 </p>
                 <div className="grid grid-cols-2 gap-2 text-xs">
-                  {quickViewProduct.specs.map((spec, idx) => (
-                    <div key={idx} className="p-2.5 rounded-xl bg-neutral-50 border border-neutral-200/70">
-                      <span className="block text-[10px] text-neutral-400 uppercase font-bold">
+                  {quickViewProduct.specs.slice(0, 4).map((spec, idx) => (
+                    <div key={idx} className="p-2 rounded-xl bg-neutral-50/80 border border-neutral-200/60">
+                      <span className="block text-[10px] text-neutral-400 uppercase font-bold tracking-wider">
                         {spec.label}
                       </span>
-                      <span className="font-semibold text-neutral-800 line-clamp-1">
+                      <span className="font-semibold text-neutral-800 text-xs break-words line-clamp-2 leading-tight mt-0.5">
                         {spec.value}
                       </span>
                     </div>
@@ -205,53 +283,63 @@ export const QuickViewModal: React.FC = () => {
               </div>
             )}
 
-            {/* Action Buttons */}
-            <div className="pt-2 flex flex-col sm:flex-row gap-3">
-              {isOutOfStock ? (
-                <Button
-                  disabled
-                  size="lg"
-                  variant="outline"
-                  className="flex-1 gap-2 font-semibold bg-neutral-100 border-neutral-300 text-neutral-400 cursor-not-allowed opacity-80"
-                >
-                  <ShoppingBag className="w-4 h-4 opacity-50" />
-                  <span>Out of Stock</span>
-                </Button>
-              ) : (
-                <Button
-                  onClick={handleAddToCart}
-                  size="lg"
-                  className={`flex-1 gap-2 font-semibold ${
-                    isAdded
-                      ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
-                      : 'bg-neutral-900 hover:bg-neutral-800 text-white'
-                  }`}
-                >
-                  {isAdded ? (
-                    <>
-                      <Check className="w-4 h-4" />
-                      <span>Added to Cart!</span>
-                    </>
-                  ) : (
-                    <>
-                      <ShoppingBag className="w-4 h-4" />
-                      <span>Add to Cart</span>
-                    </>
-                  )}
-                </Button>
-              )}
+            {/* Action Buttons Row: Perfectly Balanced 50/50 Grid that Never Overflows */}
+            <div className="pt-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                {isOutOfStock ? (
+                  <Button
+                    disabled
+                    size="default"
+                    variant="outline"
+                    className="w-full gap-2 font-semibold bg-neutral-100 border-neutral-300 text-neutral-400 cursor-not-allowed h-11 rounded-xl"
+                  >
+                    <ShoppingBag className="w-4 h-4 opacity-50" />
+                    <span>Out of Stock</span>
+                  </Button>
+                ) : (
+                  <Button
+                    onClick={handleAddToCart}
+                    size="default"
+                    className={`w-full gap-2 font-semibold text-xs sm:text-sm h-11 rounded-xl transition-all shadow-sm ${
+                      isAdded
+                        ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                        : 'bg-neutral-900 hover:bg-neutral-800 text-white'
+                    }`}
+                  >
+                    {isAdded ? (
+                      <>
+                        <Check className="w-4 h-4" />
+                        <span>Added to Cart!</span>
+                      </>
+                    ) : (
+                      <>
+                        <ShoppingBag className="w-4 h-4" />
+                        <span>Add to Cart</span>
+                      </>
+                    )}
+                  </Button>
+                )}
 
-              <a
-                href={generateProductInquiryUrl(quickViewProduct)}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex-1"
-              >
-                <Button variant="whatsapp" size="lg" className="w-full gap-2 font-semibold">
-                  <MessageCircle className="w-4 h-4" />
-                  <span>Chat on WhatsApp</span>
-                </Button>
-              </a>
+                <a
+                  href={generateProductInquiryUrl(
+                    quickViewProduct,
+                    activeVariant?.name,
+                    currentPrice
+                  )}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full"
+                >
+                  <Button 
+                    variant="whatsapp" 
+                    size="default" 
+                    className="w-full gap-2 font-semibold text-xs sm:text-sm h-11 rounded-xl shadow-sm whitespace-nowrap overflow-hidden"
+                  >
+                    <MessageCircle className="w-4 h-4 shrink-0" />
+                    <span className="truncate">WhatsApp Order</span>
+                  </Button>
+                </a>
+              </div>
             </div>
 
           </div>

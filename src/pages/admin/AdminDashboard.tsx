@@ -10,7 +10,8 @@ import {
   TrendingUp, 
   ArrowRight, 
   History, 
-  AlertTriangle 
+  AlertTriangle,
+  Sparkles
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
@@ -43,12 +44,20 @@ export const AdminDashboard: React.FC = () => {
       title="Showroom Overview"
       subtitle="Welcome back to Gayathri Communication Store Management."
       actions={
-        <Link to="/admin/prices">
-          <Button size="sm" className="gap-2 text-xs font-bold bg-gradient-to-r from-cyan-500 to-blue-600">
-            <Tag className="w-3.5 h-3.5" />
-            Manage Prices
-          </Button>
-        </Link>
+        <div className="flex items-center gap-2">
+          <Link to="/admin/banners">
+            <Button size="sm" variant="outline" className="gap-2 text-xs font-bold border-cyan-500/40 text-cyan-400 bg-slate-900 hover:bg-slate-800">
+              <Sparkles className="w-3.5 h-3.5" />
+              Hero Banners
+            </Button>
+          </Link>
+          <Link to="/admin/prices">
+            <Button size="sm" className="gap-2 text-xs font-bold bg-gradient-to-r from-cyan-500 to-blue-600 text-slate-950">
+              <Tag className="w-3.5 h-3.5" />
+              Manage Prices
+            </Button>
+          </Link>
+        </div>
       }
     >
       <div className="space-y-8">

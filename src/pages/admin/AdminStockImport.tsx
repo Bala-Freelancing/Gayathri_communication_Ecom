@@ -24,7 +24,8 @@ import {
   AlertCircle,
   Sparkles,
   ShieldAlert,
-  Loader2
+  Loader2,
+  Layers
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
@@ -84,7 +85,6 @@ export const AdminStockImport: React.FC = () => {
     setExecutionReport(null)
 
     try {
-      // In Vite dev or preview, fetch product_List (1).xls from root / public
       const res = await fetch('/product_List (1).xls')
       if (!res.ok) {
         throw new Error(`Could not automatically load product_List (1).xls (HTTP ${res.status}). Please use the file upload button above.`)
@@ -94,6 +94,27 @@ export const AdminStockImport: React.FC = () => {
       setSummary(parsed)
     } catch (err: any) {
       setParsingError(err?.message || 'Could not load default workbook. Please select and upload the file manually.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // 2b. Load the client's Xiaomi / Redmi multi-variant spec sheet directly
+  const handleLoadClientXiaomiSheet = async () => {
+    setLoading(true)
+    setParsingError(null)
+    setExecutionReport(null)
+
+    try {
+      const res = await fetch('/Gayathri_Xiaomi_Redmi_Product_Entry_Sheet_with_Specs.xlsx')
+      if (!res.ok) {
+        throw new Error(`Could not load Gayathri_Xiaomi_Redmi_Product_Entry_Sheet_with_Specs.xlsx (HTTP ${res.status}). Please use the file upload button above.`)
+      }
+      const buffer = await res.arrayBuffer()
+      const parsed = parseStockWorkbook(buffer, 'Gayathri_Xiaomi_Redmi_Product_Entry_Sheet_with_Specs.xlsx')
+      setSummary(parsed)
+    } catch (err: any) {
+      setParsingError(err?.message || 'Could not load Xiaomi / Redmi sheet. Please select and upload the file manually.')
     } finally {
       setLoading(false)
     }
@@ -390,6 +411,18 @@ export const AdminStockImport: React.FC = () => {
                 {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
                 <span>Load Default File</span>
               </Button>
+
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleLoadClientXiaomiSheet}
+                disabled={loading}
+                className="border-blue-800/80 bg-blue-950/40 text-blue-300 hover:bg-blue-900/60 hover:text-white text-xs gap-1.5"
+                title="Load official client entry sheet with 3 variants per model"
+              >
+                {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Layers className="w-3.5 h-3.5 text-blue-400" />}
+                <span>Load Xiaomi / Redmi Spec Sheet</span>
+              </Button>
             </div>
           </div>
 
@@ -489,6 +522,30 @@ export const AdminStockImport: React.FC = () => {
                   <Download className="w-3.5 h-3.5" />
                   Download Rejection Report (CSV)
                 </Button>
+              </div>
+            )}
+
+            {/* Flipkart / Amazon Multi-Variant Architecture Active Callout */}
+            {summary.items.some((i) => i.variants && i.variants.length > 0) && (
+              <div className="p-4 rounded-xl bg-gradient-to-r from-blue-950/60 via-indigo-950/40 to-slate-900 border border-blue-800/60 text-slate-200 text-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-lg">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-blue-600/20 border border-blue-500/40 flex items-center justify-center shrink-0">
+                    <Layers className="w-5 h-5 text-blue-400" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold text-white text-sm font-['Outfit']">
+                        Amazon & Flipkart Multi-Variant Architecture Active
+                      </span>
+                      <span className="text-[10px] bg-blue-900 text-blue-200 border border-blue-700 px-2 py-0.5 rounded-full font-bold">
+                        Consolidated
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-slate-300/90 mt-0.5">
+                      Instead of creating repetitive cards for every RAM/storage configuration, all {summary.items.filter((i) => i.variants && i.variants.length > 0).length} multi-variant models are consolidated into single parent models with dynamic variant switching and distinct price tiers.
+                    </p>
+                  </div>
+                </div>
               </div>
             )}
 
@@ -618,17 +675,26 @@ export const AdminStockImport: React.FC = () => {
                             <div className="font-semibold text-white group-hover:text-cyan-300 transition-colors line-clamp-1">
                               {item.name}
                             </div>
-                            <div className="flex items-center gap-2 mt-0.5 text-[11px] text-slate-400">
+                            <div className="flex items-center gap-2 mt-1 flex-wrap text-[11px] text-slate-400">
                               <span className="font-mono text-slate-500 text-[10px]">{item.sku}</span>
-                              {item.variantDetails?.storage && (
-                                <span className="bg-slate-900 text-slate-400 px-1.5 py-0.2 rounded text-[10px]">
-                                  {item.variantDetails.storage}
+                              {item.variants && item.variants.length > 0 ? (
+                                <span className="bg-gradient-to-r from-blue-950 to-indigo-950 border border-blue-600/50 text-blue-300 font-semibold px-2 py-0.5 rounded-full text-[10px] flex items-center gap-1 shadow-sm">
+                                  <Layers className="w-2.5 h-2.5 text-blue-400" />
+                                  {item.variants.length} Variants ({item.variants.map((v) => v.name).join(' • ')})
                                 </span>
-                              )}
-                              {item.variantDetails?.color && (
-                                <span className="text-slate-400 text-[10px]">
-                                  Color: {item.variantDetails.color}
-                                </span>
+                              ) : (
+                                <>
+                                  {item.variantDetails?.storage && (
+                                    <span className="bg-slate-900 text-slate-400 px-1.5 py-0.2 rounded text-[10px]">
+                                      {item.variantDetails.storage}
+                                    </span>
+                                  )}
+                                  {item.variantDetails?.color && (
+                                    <span className="text-slate-400 text-[10px]">
+                                      Color: {item.variantDetails.color}
+                                    </span>
+                                  )}
+                                </>
                               )}
                             </div>
                           </td>
@@ -666,7 +732,18 @@ export const AdminStockImport: React.FC = () => {
 
                           {/* Selling Price (Exact Selling Cost) */}
                           <td className="py-3 px-3 text-right font-mono font-bold text-white">
-                            {formatINR(item.sellingPrice)}
+                            {item.variants && item.variants.length > 1 ? (
+                              <div>
+                                <span className="text-[9px] uppercase tracking-wider text-cyan-400 font-bold block font-sans">
+                                  From {formatINR(item.sellingPrice)}
+                                </span>
+                                <span className="text-[10px] text-slate-400 font-normal">
+                                  {formatINR(Math.min(...item.variants.map((v) => v.price ?? 0)))} - {formatINR(Math.max(...item.variants.map((v) => v.price ?? 0)))}
+                                </span>
+                              </div>
+                            ) : (
+                              formatINR(item.sellingPrice)
+                            )}
                           </td>
 
                           {/* Stock Quantity */}
@@ -807,6 +884,61 @@ export const AdminStockImport: React.FC = () => {
                   </div>
                 )}
               </div>
+
+              {/* Consolidated Variants (Flipkart / Amazon Model Architecture) */}
+              {inspectingItem.variants && inspectingItem.variants.length > 0 && (
+                <div className="p-4 rounded-xl bg-gradient-to-br from-blue-950/40 to-indigo-950/30 border border-blue-800/50 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Layers className="w-4 h-4 text-cyan-400" />
+                      <span className="text-xs font-bold text-white font-['Outfit']">
+                        Consolidated Model Variants ({inspectingItem.variants.length})
+                      </span>
+                    </div>
+                    <span className="text-[10px] font-semibold text-blue-300 bg-blue-900/50 border border-blue-700/60 px-2.5 py-0.5 rounded-full">
+                      Flipkart / Amazon Architecture
+                    </span>
+                  </div>
+                  <div className="overflow-x-auto rounded-lg border border-slate-800/80">
+                    <table className="w-full text-left text-xs border-collapse">
+                      <thead>
+                        <tr className="border-b border-slate-800 bg-slate-950/70 text-[10px] uppercase font-bold text-slate-400">
+                          <th className="py-2 px-3">Variant</th>
+                          <th className="py-2 px-3">SKU</th>
+                          <th className="py-2 px-3 text-right">Selling Price</th>
+                          <th className="py-2 px-3 text-right">MRP</th>
+                          <th className="py-2 px-3 text-center">Stock Units</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-800/60 font-mono text-[11px]">
+                        {inspectingItem.variants.map((v) => (
+                          <tr key={v.id} className="hover:bg-slate-900/50 transition-colors">
+                            <td className="py-2 px-3 font-sans font-semibold text-white">
+                              {v.name}
+                            </td>
+                            <td className="py-2 px-3 text-slate-400 text-[10px]">
+                              {v.sku}
+                            </td>
+                            <td className="py-2 px-3 text-right font-bold text-emerald-400">
+                              {formatINR(v.price ?? 0)}
+                            </td>
+                            <td className="py-2 px-3 text-right text-slate-500 line-through">
+                              {formatINR(v.originalPrice ?? 0)}
+                            </td>
+                            <td className="py-2 px-3 text-center">
+                              {v.inStock ? (
+                                <span className="text-emerald-400 font-bold">{v.stockQuantity}</span>
+                              ) : (
+                                <span className="text-rose-400 font-bold">0</span>
+                              )}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
 
               <div className="flex justify-end pt-2">
                 <Button

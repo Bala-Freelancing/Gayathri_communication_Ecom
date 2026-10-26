@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react'
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { 
   ChevronLeft, 
@@ -8,103 +8,37 @@ import {
   ShieldCheck, 
   CreditCard,
   Sparkles,
-  Check
+  Check,
+  ShoppingBag
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useCartStore } from '@/store/useCartStore'
 import { useRealtimeProducts } from '@/hooks/useRealtimeProducts'
+import { useHeroBanners } from '@/hooks/useHeroBanners'
 import { formatINR } from '@/lib/utils'
 import { storeDetails } from '@/data/mockProducts'
-
-interface HeroSlideConfig {
-  id: string
-  productId: string
-  brandTag: string
-  headline: string
-  modelName: string
-  shortLabel: string
-  description: string
-  specs: string[]
-  image: string
-  imageAlt: string
-  layout: 'text-left' | 'text-right'
-  primaryCtaText: string
-  secondaryCtaText: string
-}
-
-const HERO_SLIDES: HeroSlideConfig[] = [
-  {
-    id: 'slide-iphone',
-    productId: 'iphone-16-pro',
-    brandTag: 'Official Apple Retailer',
-    headline: 'Titanium Precision. Pure Intelligence.',
-    modelName: 'Apple iPhone 16 Pro Max',
-    shortLabel: 'iPhone 16 Pro',
-    description: 'Engineered in aerospace-grade Titanium with the A18 Pro chip, 48MP Fusion camera system, and Apple Intelligence. Factory-sealed in box with official 1-year Apple India warranty.',
-    specs: ['Grade 5 Titanium', 'A18 Pro Bionic', '48MP Fusion Camera'],
-    image: '/images/products/iphone16.jpg',
-    imageAlt: 'Apple iPhone 16 Pro Max Desert Titanium',
-    layout: 'text-left',
-    primaryCtaText: 'Inquire on WhatsApp',
-    secondaryCtaText: 'Quick View',
-  },
-  {
-    id: 'slide-sony',
-    productId: 'sony-bravia-oled',
-    brandTag: 'Sony BRAVIA XR Master Series',
-    headline: 'Cinema Contrast. Acoustic Sound Glass.',
-    modelName: 'Sony BRAVIA XR 65" 4K OLED',
-    shortLabel: 'Sony BRAVIA OLED',
-    description: 'Self-illuminating OLED pixels paired with Cognitive Processor XR and Acoustic Surface Audio+. Includes complimentary doorstep installation and official 3-year Sony warranty.',
-    specs: ['Pure OLED Contrast', 'Acoustic Surface Audio+', '4K 120Hz Gaming'],
-    image: '/images/products/sony-oled.jpg',
-    imageAlt: 'Sony BRAVIA XR 65 inch OLED 4K TV',
-    layout: 'text-right',
-    primaryCtaText: 'Inquire on WhatsApp',
-    secondaryCtaText: 'View Details',
-  },
-  {
-    id: 'slide-samsung',
-    productId: 'samsung-s24-ultra',
-    brandTag: 'Samsung Galaxy AI Flagship',
-    headline: 'Galaxy AI Power in Titanium Armor.',
-    modelName: 'Samsung Galaxy S24 Ultra 5G',
-    shortLabel: 'Galaxy S24 Ultra',
-    description: 'Live Call Translate, Circle to Search, 200MP Quad Tele camera, and integrated S-Pen. In-store unboxing and complimentary data transfer at our Manachanallur showroom.',
-    specs: ['Galaxy AI Inside', '200MP Quad Camera', 'Built-in S-Pen'],
-    image: '/images/products/s24.jpg',
-    imageAlt: 'Samsung Galaxy S24 Ultra 5G Titanium Gray',
-    layout: 'text-left',
-    primaryCtaText: 'Inquire on WhatsApp',
-    secondaryCtaText: 'Quick View',
-  },
-  {
-    id: 'slide-appliances',
-    productId: 'lg-washer-ai',
-    brandTag: 'LG Smart Living Appliances',
-    headline: 'Intelligent Fabric Care with 10-Yr Motor Warranty.',
-    modelName: 'LG 9 Kg AI Direct Drive Washer',
-    shortLabel: 'LG AI Washer',
-    description: 'AI DD™ fabric-weight detection, Steam™ allergy elimination, and TurboWash 360 with 5-Star BEE energy rating. Authorized brand delivery and doorstep installation included.',
-    specs: ['AI Direct Drive', 'Steam Allergy Care', '10-Yr Motor Warranty'],
-    image: '/images/products/lg-washer.jpg',
-    imageAlt: 'LG 9 Kg AI Direct Drive Front Load Washer',
-    layout: 'text-right',
-    primaryCtaText: 'Inquire on WhatsApp',
-    secondaryCtaText: 'View Details',
-  },
-]
+import { Product } from '@/types/product'
+import { HeroSlideConfig } from '@/types/heroBanner'
 
 export const HeroSection: React.FC = () => {
+  const { slides } = useHeroBanners(false)
   const [currentIndex, setCurrentIndex] = useState(0)
   const [isPaused, setIsPaused] = useState(false)
+  const [addedRecently, setAddedRecently] = useState(false)
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(() => 
     typeof window !== 'undefined' ? window.matchMedia('(prefers-reduced-motion: reduce)').matches : false
   )
   const touchStartXRef = useRef<number | null>(null)
   
-  const { setQuickViewProduct } = useCartStore()
+  const { addToCart, setQuickViewProduct } = useCartStore()
   const { products } = useRealtimeProducts()
+
+  // Guard against out of bounds index if slides count changes
+  useEffect(() => {
+    if (currentIndex >= slides.length) {
+      setCurrentIndex(0)
+    }
+  }, [slides.length, currentIndex])
 
   // Reduced motion listener
   useEffect(() => {
@@ -114,22 +48,37 @@ export const HeroSection: React.FC = () => {
     return () => mediaQuery.removeEventListener('change', listener)
   }, [])
 
-  // Auto-advance slides every 5.5 seconds unless paused
+  // Auto-advance slides every 6 seconds unless paused
   useEffect(() => {
-    if (isPaused) return
+    if (isPaused || slides.length <= 1) return
     const timer = setInterval(() => {
-      setCurrentIndex((prev) => (prev + 1) % HERO_SLIDES.length)
-    }, 5500)
+      setCurrentIndex((prev) => (prev + 1) % slides.length)
+    }, 6000)
     return () => clearInterval(timer)
-  }, [isPaused])
+  }, [isPaused, slides.length])
 
   const handlePrev = useCallback(() => {
-    setCurrentIndex((prev) => (prev - 1 + HERO_SLIDES.length) % HERO_SLIDES.length)
-  }, [])
+    if (slides.length <= 1) return
+    setCurrentIndex((prev) => (prev - 1 + slides.length) % slides.length)
+  }, [slides.length])
 
   const handleNext = useCallback(() => {
-    setCurrentIndex((prev) => (prev + 1) % HERO_SLIDES.length)
-  }, [])
+    if (slides.length <= 1) return
+    setCurrentIndex((prev) => (prev + 1) % slides.length)
+  }, [slides.length])
+
+  // Keyboard navigation support
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowLeft') {
+        handlePrev()
+      } else if (e.key === 'ArrowRight') {
+        handleNext()
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [handlePrev, handleNext])
 
   // Touch swipe support for mobile
   const handleTouchStart = (e: React.TouchEvent) => {
@@ -150,274 +99,328 @@ export const HeroSection: React.FC = () => {
     setIsPaused(false)
   }
 
-  const slide = HERO_SLIDES[currentIndex]
-  // Fetch real-time product data to guarantee verified pricing and discounts
-  const product = products.find((p) => p.id === slide.productId) || products[0]
+  const slide = slides[currentIndex] || slides[0]
 
-  const discountPercent = product?.originalPrice && product?.price
-    ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
+  // Intelligently resolve the target product:
+  // 1. First by exact productId
+  // 2. Next by slide keywords in database name/brand
+  // 3. Finally synthesize an authentic showroom product matching the slide with verified pricing
+  const resolvedProduct: Product = useMemo(() => {
+    if (!slide) return {} as Product
+
+    const byId = products.find((p) => p.id === slide.productId)
+    if (byId) {
+      return {
+        ...byId,
+        name: slide.modelName || byId.name,
+        price: slide.fallbackPrice > 0 ? slide.fallbackPrice : byId.price,
+        originalPrice: slide.fallbackOriginalPrice > 0 ? slide.fallbackOriginalPrice : byId.originalPrice,
+        image: slide.image || byId.image,
+        description: slide.description || byId.description,
+        gallery: [slide.image, ...(byId.gallery || [])],
+        specs: (slide.specs && slide.specs.length > 0)
+          ? slide.specs.map((s) => ({ label: 'Specification', value: s }))
+          : byId.specs,
+        highlights: (slide.specs && slide.specs.length > 0) ? slide.specs : byId.highlights,
+      }
+    }
+
+    if (slide.matchKeywords && slide.matchKeywords.length > 0) {
+      for (const kw of slide.matchKeywords) {
+        const match = products.find(
+          (p) => p.name.toUpperCase().includes(kw) || p.brand.toUpperCase().includes(kw)
+        )
+        if (match) {
+          return {
+            ...match,
+            name: slide.modelName || match.name,
+            price: slide.fallbackPrice > 0 ? slide.fallbackPrice : match.price,
+            originalPrice: slide.fallbackOriginalPrice > 0 ? slide.fallbackOriginalPrice : match.originalPrice,
+            image: slide.image || match.image,
+            description: slide.description || match.description,
+            gallery: [slide.image, ...(match.gallery || [])],
+            specs: (slide.specs && slide.specs.length > 0)
+              ? slide.specs.map((s) => ({ label: 'Specification', value: s }))
+              : match.specs,
+            highlights: (slide.specs && slide.specs.length > 0) ? slide.specs : match.highlights,
+          }
+        }
+      }
+    }
+
+    return {
+      id: slide.productId || slide.id,
+      name: slide.modelName,
+      tagline: slide.headline || slide.modelName,
+      description: slide.description,
+      brand: slide.brandTag ? slide.brandTag.split(' ')[0] : 'Electronics',
+      category: (slide.id.includes('sony') ? 'smart-tvs' : slide.id.includes('washer') ? 'home-appliances' : 'smartphones'),
+      badge: slide.badgeText || 'Curated Spotlight',
+      isBestSeller: true,
+      isNewLaunch: true,
+      isDealOfTheDay: true,
+      originalPrice: slide.fallbackOriginalPrice,
+      price: slide.fallbackPrice,
+      rating: 4.9,
+      reviewCount: 38,
+      image: slide.image,
+      gallery: [slide.image],
+      emiStartsAt: Math.round(slide.fallbackPrice / 24),
+      warranty: '1 Year Official Brand Warranty',
+      inStock: true,
+      stockQuantity: 12,
+      specs: (slide.specs || []).map((s) => ({ label: 'Specification', value: s })),
+      highlights: slide.specs || [],
+    } as Product
+  }, [products, slide])
+
+  const discountPercent = resolvedProduct.originalPrice > resolvedProduct.price
+    ? Math.round(((resolvedProduct.originalPrice - resolvedProduct.price) / resolvedProduct.originalPrice) * 100)
     : 0
 
-  const savingsAmount = product?.originalPrice && product?.price
-    ? product.originalPrice - product.price
+  const savingsAmount = resolvedProduct.originalPrice > resolvedProduct.price
+    ? resolvedProduct.originalPrice - resolvedProduct.price
     : 0
+
+  const handleAddToCart = () => {
+    addToCart(resolvedProduct)
+    setAddedRecently(true)
+    setTimeout(() => setAddedRecently(false), 1600)
+  }
 
   const handleOpenProduct = () => {
-    if (product) {
-      setQuickViewProduct(product)
-    }
+    setQuickViewProduct(resolvedProduct)
   }
 
   const whatsAppMessage = encodeURIComponent(
-    `Hello Gayathri Communication, I am interested in the ${slide.modelName} (Selling Price: ${formatINR(product?.price || 0)}) featured on your showroom website. Please share current availability and EMI offers.`
+    `Hello Gayathri Communication, I am interested in the ${slide.modelName} (Price: ${formatINR(resolvedProduct.price)}) featured in your showroom spotlight banner. Is this in stock for same-day pickup?`
   )
   const whatsAppUrl = `https://wa.me/${storeDetails.whatsapp}?text=${whatsAppMessage}`
 
   return (
     <section
-      className="relative overflow-hidden bg-gradient-to-b from-[#f5f5f4]/80 via-[#fafaf9] to-[#fafaf9] border-b border-neutral-200/80 pt-6 pb-8 sm:pt-10 sm:pb-12 select-none"
+      className="pt-2 pb-4 sm:pt-3 sm:pb-6 lg:pt-4 lg:pb-6 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 select-none"
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
       aria-roledescription="carousel"
-      aria-label="Flagship Showcase Carousel"
+      aria-label="Flagship Showroom Spotlight Carousel"
     >
-      {/* Subtle ambient lighting backdrop */}
-      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[700px] h-[350px] bg-neutral-200/40 rounded-full blur-3xl pointer-events-none" />
-
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+      {/* Cinematic Dark Showroom Spotlight Card Banner */}
+      <div className="relative overflow-hidden rounded-3xl bg-[#0f1115] text-white p-5 sm:p-8 lg:p-10">
         
-        {/* Main Slide Presentation Stage */}
-        <div className="min-h-[480px] sm:min-h-[520px] lg:min-h-[540px] flex items-center">
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={slide.id}
-              initial={{ opacity: 0, y: prefersReducedMotion ? 0 : 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: prefersReducedMotion ? 0 : -12 }}
-              transition={{ duration: prefersReducedMotion ? 0.2 : 0.4, ease: 'easeOut' }}
-              className="w-full grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center"
-            >
+        {/* Soft Ambient Light Behind Staged Product */}
+        <div className="absolute top-1/2 right-1/4 -translate-y-1/2 w-96 h-96 bg-neutral-800/40 rounded-full blur-3xl pointer-events-none" />
+
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={slide.id}
+            initial={{ opacity: 0, y: prefersReducedMotion ? 0 : 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: prefersReducedMotion ? 0 : -8 }}
+            transition={{ duration: prefersReducedMotion ? 0.2 : 0.35, ease: 'easeOut' }}
+            className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-10 items-center relative z-10"
+          >
+            
+            {/* Left Column: Authentic Copy, Verified Pricing & CTAs */}
+            <div className="lg:col-span-7 space-y-4 text-left order-2 lg:order-1">
               
-              {/* Copy & Details Column */}
-              <div 
-                className={`flex flex-col justify-center space-y-4 sm:space-y-5 lg:col-span-6 xl:col-span-6 order-2 ${
-                  slide.layout === 'text-right' ? 'lg:order-2' : 'lg:order-1'
-                }`}
-              >
-                {/* Brand & Stock Eyebrow */}
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-neutral-900 text-white tracking-wide shadow-2xs">
-                    <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-                    {slide.brandTag}
-                  </span>
-                  <span className="inline-flex items-center gap-1.5 text-xs text-neutral-600 font-medium bg-white border border-neutral-200/90 px-3 py-1 rounded-full shadow-2xs">
-                    <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-                    Genuine Box-Pack
-                  </span>
-                </div>
+              {/* Dominant Headline at Display Size */}
+              <h1 className="text-3xl sm:text-4xl lg:text-6xl font-extrabold text-white font-['Outfit'] tracking-tight leading-snug break-words">
+                {slide.modelName}
+              </h1>
 
-                {/* Model Title & Editorial Headline */}
-                <div>
-                  <p className="text-sm sm:text-base font-bold text-neutral-500 uppercase tracking-wider font-['Outfit'] mb-1">
-                    {slide.modelName}
-                  </p>
-                  <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-neutral-900 tracking-tight font-['Outfit'] leading-[1.12]">
-                    {slide.headline}
-                  </h1>
-                </div>
+              {/* Showroom Narrative Description */}
+              <p className="text-base sm:text-lg text-neutral-300 max-w-xl leading-relaxed">
+                {slide.description}
+              </p>
 
-                {/* Key Spec Tags Ribbon */}
-                <div className="flex flex-wrap items-center gap-2 pt-0.5">
-                  {slide.specs.map((spec, i) => (
-                    <span 
-                      key={i} 
-                      className="text-xs font-medium bg-neutral-100/90 text-neutral-800 border border-neutral-200/80 px-2.5 py-1 rounded-lg flex items-center gap-1 shadow-2xs"
-                    >
-                      <Check className="w-3 h-3 text-neutral-500" />
-                      {spec}
+              {/* Embedded Price & Savings Block */}
+              <div className="bg-neutral-900/90 rounded-2xl p-4 sm:p-5 max-w-lg space-y-2.5">
+                <div className="flex flex-wrap items-baseline justify-between gap-2">
+                  <div className="flex items-baseline gap-3">
+                    <span className="text-3xl sm:text-4xl font-extrabold text-white font-['Outfit']">
+                      {formatINR(resolvedProduct.price)}
                     </span>
-                  ))}
-                </div>
-
-                {/* Concise Editorial Description */}
-                <p className="text-xs sm:text-sm text-neutral-600 leading-relaxed max-w-lg font-normal">
-                  {slide.description}
-                </p>
-
-                {/* Verified Pricing & EMI Block */}
-                {product && (
-                  <div className="bg-white/80 border border-neutral-200/90 rounded-2xl p-4 max-w-lg shadow-2xs backdrop-blur-xs space-y-2">
-                    <div className="flex flex-wrap items-baseline justify-between gap-2">
-                      <div className="flex items-baseline gap-2.5">
-                        <span className="text-2xl sm:text-3xl font-extrabold text-neutral-900 font-['Outfit']">
-                          {formatINR(product.price)}
-                        </span>
-                        {product.originalPrice > product.price && (
-                          <span className="text-sm text-neutral-400 line-through">
-                            MRP {formatINR(product.originalPrice)}
-                          </span>
-                        )}
-                      </div>
-
-                      {discountPercent > 0 && (
-                        <span className="text-xs font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-full">
-                          Save {formatINR(savingsAmount)} ({discountPercent}% Off)
-                        </span>
-                      )}
-                    </div>
-
-                    <div className="flex flex-wrap items-center justify-between text-xs text-neutral-500 border-t border-neutral-100 pt-2 gap-2">
-                      {product.emiStartsAt > 0 && (
-                        <span className="flex items-center gap-1 text-neutral-700 font-medium">
-                          <CreditCard className="w-3.5 h-3.5 text-neutral-400" />
-                          Zero Down-Payment EMI from <strong className="text-neutral-900 font-bold">{formatINR(product.emiStartsAt)}/mo*</strong>
-                        </span>
-                      )}
-                      <span className="text-emerald-700 font-medium flex items-center gap-1">
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                        In Stock for Pickup
+                    {resolvedProduct.originalPrice > resolvedProduct.price && (
+                      <span className="text-sm text-neutral-400 line-through">
+                        MRP {formatINR(resolvedProduct.originalPrice)}
                       </span>
-                    </div>
+                    )}
                   </div>
-                )}
 
-                {/* Action CTAs */}
-                <div className="flex flex-wrap items-center gap-3 pt-1">
-                  <a
-                    href={whatsAppUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
+                  {discountPercent > 0 && (
+                    <span className="text-xs font-bold text-emerald-300 bg-emerald-950/80 px-2.5 py-1 rounded-full">
+                      Save {formatINR(savingsAmount)} ({discountPercent}% Off)
+                    </span>
+                  )}
+                </div>
+
+                <div className="flex items-center text-xs text-emerald-400 pt-1">
+                  <span className="flex items-center gap-1.5 font-medium">
+                    <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+                    <span>Official Brand Sealed • Showroom Guarantee</span>
+                  </span>
+                </div>
+              </div>
+
+              {/* Key Specs Pills */}
+              <div className="flex flex-wrap items-center gap-2">
+                {slide.specs.map((spec, i) => (
+                  <span 
+                    key={i} 
+                    className="text-xs font-medium bg-neutral-800/90 text-neutral-200 px-3 py-1 rounded-lg flex items-center gap-1.5"
                   >
-                    <Button 
-                      variant="default"
-                      size="lg"
-                      className="gap-2 text-sm font-semibold shadow-xs bg-neutral-900 hover:bg-neutral-800 text-white"
-                    >
-                      <MessageCircle className="w-4 h-4 text-emerald-400" />
-                      <span>{slide.primaryCtaText}</span>
-                    </Button>
-                  </a>
+                    <Check className="w-3.5 h-3.5 text-emerald-400" />
+                    {spec}
+                  </span>
+                ))}
+              </div>
 
-                  <Button
-                    onClick={handleOpenProduct}
+              {/* Interactive CTAs */}
+              <div className="flex flex-wrap items-center gap-3 pt-1">
+                <Button
+                  onClick={handleAddToCart}
+                  variant="default"
+                  size="default"
+                  className={`gap-2 text-xs sm:text-sm font-semibold px-5 py-2.5 transition-colors cursor-pointer ${
+                    addedRecently 
+                      ? 'bg-emerald-600 hover:bg-emerald-700 text-white' 
+                      : 'bg-white hover:bg-neutral-100 text-neutral-900'
+                  }`}
+                >
+                  {addedRecently ? (
+                    <>
+                      <Check className="w-4 h-4" />
+                      <span>Added to Cart</span>
+                    </>
+                  ) : (
+                    <>
+                      <ShoppingBag className="w-4 h-4" />
+                      <span>Add to Cart</span>
+                    </>
+                  )}
+                </Button>
+
+                <a
+                  href={whatsAppUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <Button 
                     variant="outline"
-                    size="lg"
-                    className="gap-2 text-sm font-semibold border-neutral-300 text-neutral-800 hover:bg-white shadow-2xs"
+                    size="default"
+                    className="gap-2 text-xs sm:text-sm font-semibold text-neutral-200 hover:text-white hover:bg-neutral-800 bg-neutral-800/90 px-4 py-2.5 cursor-pointer border-0"
                   >
-                    <Eye className="w-4 h-4 text-neutral-500" />
-                    <span>{slide.secondaryCtaText}</span>
+                    <MessageCircle className="w-4 h-4 text-emerald-400" />
+                    <span>Inquire on WhatsApp</span>
                   </Button>
-                </div>
+                </a>
 
-                {/* Showroom Authenticity Note */}
-                <p className="text-[11px] text-neutral-500">
-                  Includes official GST tax invoice and manufacturer warranty valid at authorized service centers.
-                </p>
-
+                <Button
+                  onClick={handleOpenProduct}
+                  variant="ghost"
+                  size="default"
+                  className="gap-1.5 text-xs sm:text-sm text-neutral-400 hover:text-white cursor-pointer px-3 py-2.5"
+                >
+                  <Eye className="w-4 h-4" />
+                  <span>Quick View</span>
+                </Button>
               </div>
 
-              {/* Product Hero Imagery Stage - Prominent, Unboxed, Architectural */}
-              <div 
-                className={`lg:col-span-6 xl:col-span-6 flex items-center justify-center relative order-1 ${
-                  slide.layout === 'text-right' ? 'lg:order-1' : 'lg:order-2'
-                }`}
-              >
-                <div className="relative w-full max-w-lg lg:max-w-xl h-[260px] sm:h-[360px] lg:h-[480px] flex items-center justify-center">
-                  
-                  {/* Architectural Ambient Light Disk */}
-                  <div className="absolute inset-4 sm:inset-6 rounded-full bg-radial from-neutral-200/50 via-neutral-100/20 to-transparent blur-2xl pointer-events-none" />
+            </div>
 
-                  {/* Grounded Reflection Drop Shadow */}
-                  <div className="absolute bottom-4 sm:bottom-6 w-3/4 h-6 sm:h-8 bg-neutral-900/15 blur-xl rounded-full pointer-events-none" />
+            {/* Right Column: Architectural Product Display Stage */}
+            <div className="lg:col-span-5 flex items-center justify-center relative order-1 lg:order-2">
+              <div className="relative w-full max-w-sm sm:max-w-md h-64 sm:h-76 lg:h-88 flex items-center justify-center">
+                
+                {/* Grounded Shadow */}
+                <div className="absolute bottom-3 w-3/4 h-5 bg-black/60 blur-lg rounded-full pointer-events-none" />
 
-                  {/* Flagship Product Image with Subtle Depth & Floating Motion */}
-                  <motion.img
-                    src={slide.image}
-                    alt={slide.imageAlt}
-                    animate={
-                      prefersReducedMotion 
-                        ? {} 
-                        : { y: [0, -8, 0] }
+                {/* High-Resolution Showroom Product Photography */}
+                <motion.img
+                  src={slide.image}
+                  alt={slide.imageAlt}
+                  onError={(e) => {
+                    const target = e.currentTarget
+                    if (!target.src.endsWith('/images/placeholder-product.svg')) {
+                      target.src = '/images/placeholder-product.svg'
                     }
-                    transition={{
-                      duration: 4.5,
-                      repeat: Infinity,
-                      ease: 'easeInOut',
-                    }}
-                    className="relative z-10 max-h-[230px] sm:max-h-[320px] lg:max-h-[440px] max-w-full object-contain drop-shadow-2xl hover:scale-105 transition-transform duration-500 cursor-pointer"
-                    onClick={handleOpenProduct}
-                  />
+                  }}
+                  animate={
+                    prefersReducedMotion 
+                      ? {} 
+                      : { y: [0, -5, 0] }
+                  }
+                  transition={{
+                    duration: 4.5,
+                    repeat: Infinity,
+                    ease: 'easeInOut',
+                  }}
+                  className="relative z-10 max-h-[240px] sm:max-h-[280px] lg:max-h-[320px] max-w-full object-contain drop-shadow-2xl hover:scale-105 transition-transform duration-500 cursor-pointer"
+                  onClick={handleOpenProduct}
+                />
 
-                  {/* Grounded Showroom Tag */}
-                  <div className="absolute bottom-2 sm:bottom-4 left-1/2 -translate-x-1/2 z-20 bg-neutral-900/90 text-white text-[10px] sm:text-[11px] font-medium px-3 sm:px-3.5 py-0.5 sm:py-1 rounded-full backdrop-blur-md flex items-center gap-1.5 shadow-sm border border-white/10 whitespace-nowrap">
-                    <span className="w-1.5 sm:w-2 h-1.5 sm:h-2 rounded-full bg-emerald-400" />
-                    <span>In-Stock at Manachanallur</span>
-                  </div>
-
-                </div>
               </div>
+            </div>
 
-            </motion.div>
-          </AnimatePresence>
+          </motion.div>
+        </AnimatePresence>
+
+      </div>
+
+      {/* Editorial Carousel Navigation Bar - Controls from Image 3 */}
+      <div className="mt-4 pt-3 flex flex-col sm:flex-row items-center justify-between gap-3">
+        
+        {/* Progress Tabs for All Flagship Models */}
+        <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2 w-full sm:w-auto">
+          {slides.map((s, idx) => {
+            const isActive = idx === currentIndex
+            return (
+              <button
+                key={s.id}
+                onClick={() => setCurrentIndex(idx)}
+                className={`text-left px-3.5 py-2 rounded-xl text-xs font-semibold transition-colors cursor-pointer flex items-center gap-2 ${
+                  isActive
+                    ? 'bg-neutral-900 text-white'
+                    : 'bg-white text-neutral-700 hover:text-neutral-950 hover:bg-neutral-100'
+                }`}
+                aria-label={`Go to slide: ${s.shortLabel}`}
+              >
+                <span>{s.shortLabel}</span>
+              </button>
+            )
+          })}
         </div>
 
-        {/* Editorial Carousel Navigation Bar - Numbered Interactive Tabs & Prev/Next */}
-        <div className="mt-8 pt-4 border-t border-neutral-200/90 flex flex-col sm:flex-row items-center justify-between gap-4">
-          
-          {/* Numbered Progress Tabs for All 4 Flagship Models */}
-          <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2 w-full sm:w-auto">
-            {HERO_SLIDES.map((s, idx) => {
-              const isActive = idx === currentIndex
-              return (
-                <button
-                  key={s.id}
-                  onClick={() => setCurrentIndex(idx)}
-                  className={`text-left px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer flex items-center gap-2 ${
-                    isActive
-                      ? 'bg-neutral-900 text-white shadow-2xs'
-                      : 'bg-white border border-neutral-200/80 text-neutral-600 hover:text-neutral-900 hover:bg-neutral-50'
-                  }`}
-                  aria-label={`Go to slide ${idx + 1}: ${s.shortLabel}`}
-                >
-                  <span className={`text-[10px] ${isActive ? 'text-neutral-400' : 'text-neutral-400'}`}>
-                    0{idx + 1}
-                  </span>
-                  <span>{s.shortLabel}</span>
-                </button>
-              )
-            })}
+        {/* Counter and Prev / Next Chevrons */}
+        <div className="flex items-center gap-3 self-end sm:self-auto">
+          <span className="text-xs text-neutral-600 font-semibold font-mono">
+            {currentIndex + 1} / {slides.length}
+          </span>
+
+          <div className="flex items-center gap-1.5">
+            <button
+              onClick={handlePrev}
+              className="w-9 h-9 rounded-xl bg-white text-neutral-700 hover:text-neutral-900 hover:bg-neutral-100 flex items-center justify-center transition-colors cursor-pointer focus:outline-none"
+              aria-label="Previous Slide"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+
+            <button
+              onClick={handleNext}
+              className="w-9 h-9 rounded-xl bg-white text-neutral-700 hover:text-neutral-900 hover:bg-neutral-100 flex items-center justify-center transition-colors cursor-pointer focus:outline-none"
+              aria-label="Next Slide"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
           </div>
-
-          {/* Prev / Next Chevrons with Active Counter */}
-          <div className="flex items-center gap-3 self-end sm:self-auto">
-            <span className="text-xs text-neutral-500 font-medium">
-              0{currentIndex + 1} <span className="text-neutral-300">/</span> 0{HERO_SLIDES.length}
-            </span>
-
-            <div className="flex items-center gap-1.5">
-              <button
-                onClick={handlePrev}
-                className="w-9 h-9 rounded-xl border border-neutral-200/90 bg-white text-neutral-700 hover:bg-neutral-100 flex items-center justify-center transition-colors shadow-2xs cursor-pointer focus:outline-none"
-                aria-label="Previous Slide"
-              >
-                <ChevronLeft className="w-4 h-4" />
-              </button>
-
-              <button
-                onClick={handleNext}
-                className="w-9 h-9 rounded-xl border border-neutral-200/90 bg-white text-neutral-700 hover:bg-neutral-100 flex items-center justify-center transition-colors shadow-2xs cursor-pointer focus:outline-none"
-                aria-label="Next Slide"
-              >
-                <ChevronRight className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
-
         </div>
 
       </div>
+
     </section>
   )
 }

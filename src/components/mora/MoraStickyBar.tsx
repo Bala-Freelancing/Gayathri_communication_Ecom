@@ -56,19 +56,19 @@ export const MoraStickyBar: React.FC<MoraStickyBarProps> = ({ onMoreDetailsClick
           </div>
         </div>
 
-        {/* Price, EMI & More Details link */}
+        {/* Price & More Details link */}
         <div className="text-left sm:text-right hidden sm:block">
           <p className="font-mono text-xs text-neutral-200">
             {formatINR(heroProduct.price)}
           </p>
           <p className="font-mono text-[10px] text-[#ff7700]">
-            0% EMI: {formatINR(heroProduct.emiStartsAt)}/mo
+            Brand Sealed • Official Warranty
           </p>
           <button
             onClick={onMoreDetailsClick}
             className="font-mono text-[10px] text-neutral-400 hover:text-white underline transition-colors"
           >
-            EMI Plans & Details
+            View Details
           </button>
         </div>
 

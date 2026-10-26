@@ -53,18 +53,22 @@ export const AdminLogin: React.FC = () => {
 
       <div className="w-full max-w-md relative z-10 space-y-6">
         {/* Brand Header */}
-        <div className="text-center space-y-2">
-          <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-cyan-500 to-blue-600 p-[1px] mx-auto shadow-lg shadow-cyan-500/20">
-            <div className="w-full h-full bg-slate-950 rounded-[15px] flex items-center justify-center font-extrabold text-cyan-400 font-['Outfit'] text-xl">
-              GC
-            </div>
+        <div className="text-center space-y-3">
+          <div className="inline-block bg-white px-4 py-2 rounded-2xl shadow-xl shadow-cyan-500/10 border border-white/20">
+            <img 
+              src="/images/gayathri-logo.png" 
+              alt="Gayathri Communication - Mobiles & Home Appliances" 
+              className="h-10 sm:h-11 w-auto object-contain"
+            />
           </div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-white font-['Outfit'] tracking-tight">
-            Administrator Portal
-          </h1>
-          <p className="text-xs text-slate-400 max-w-sm mx-auto">
-            Gayathri Communication Management Suite. Secure price controls, product catalog, and showroom inventory.
-          </p>
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-white font-['Outfit'] tracking-tight">
+              Administrator Portal
+            </h1>
+            <p className="text-xs text-slate-400 max-w-sm mx-auto mt-1">
+              Gayathri Communication Management Suite. Secure price controls, product catalog, and showroom inventory.
+            </p>
+          </div>
         </div>
 
         {/* Login Card */}
@@ -147,23 +151,23 @@ export const AdminLogin: React.FC = () => {
               )}
             </div>
 
-            {!isConfigured && (
-              <div className="p-2.5 rounded-lg bg-amber-950/20 border border-amber-800/30 text-amber-300 text-[11px] space-y-1">
-                <p className="font-semibold">Local Demo Credentials:</p>
-                <p>Email: <code className="text-white">admin@gayathricommunication.com</code></p>
-                <p>Password: <code className="text-white">Gayathri@2026</code></p>
+            <div className="p-2.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-300 text-[11px] space-y-1">
+              <p className="font-semibold text-cyan-400">Owner Admin Credentials:</p>
+              <p>Email: <code className="text-white">gayathri.communication.2017@gmail.com</code></p>
+              <p>Password: <code className="text-white">Gayathri@2026</code></p>
+              <div className="pt-1 flex items-center gap-3">
                 <button
                   type="button"
                   onClick={() => {
-                    setEmail('admin@gayathricommunication.com')
+                    setEmail('gayathri.communication.2017@gmail.com')
                     setPassword('Gayathri@2026')
                   }}
-                  className="mt-1 text-cyan-400 hover:underline font-semibold block"
+                  className="text-cyan-400 hover:underline font-semibold cursor-pointer"
                 >
-                  Fill Demo Credentials
+                  Auto-fill Owner Login →
                 </button>
               </div>
-            )}
+            </div>
           </div>
         </div>
 

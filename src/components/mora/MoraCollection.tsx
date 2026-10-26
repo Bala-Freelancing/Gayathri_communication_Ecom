@@ -102,7 +102,7 @@ export const MoraCollection: React.FC = () => {
                       {formatINR(product.price)}
                     </span>
                     <span className="font-mono text-[10px] text-[#ff7700] block mt-0.5 font-medium">
-                      0% EMI: {formatINR(product.emiStartsAt)}/mo
+                      Brand Sealed Box Pack
                     </span>
                   </div>
                   <span className="font-mono text-[11px] text-neutral-400 group-hover:text-white underline">

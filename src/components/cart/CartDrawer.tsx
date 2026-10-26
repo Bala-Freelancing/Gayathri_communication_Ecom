@@ -290,7 +290,7 @@ export const CartDrawer: React.FC = () => {
                           </span>
                         )}
                         <span className="text-xs font-extrabold text-neutral-900 mt-0.5 block">
-                          {formatINR(item.product.price)}
+                          {formatINR(item.selectedVariantPrice ?? item.product.price)}
                         </span>
                       </div>
 

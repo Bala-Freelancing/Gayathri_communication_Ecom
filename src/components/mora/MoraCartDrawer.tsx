@@ -88,7 +88,7 @@ export const MoraCartDrawer: React.FC = () => {
 
                 <div className="text-right space-y-2">
                   <p className="font-mono text-xs text-white">
-                    {formatINR(item.product.price * item.quantity)}
+                    {formatINR((item.selectedVariantPrice ?? item.product.price) * item.quantity)}
                   </p>
                   <button
                     onClick={() => removeFromCart(item.product.id, item.selectedVariant)}

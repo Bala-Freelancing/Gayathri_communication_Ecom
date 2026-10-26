@@ -17,7 +17,8 @@ import {
   Image as ImageIcon,
   ExternalLink,
   Loader2,
-  RefreshCw
+  RefreshCw,
+  Layers
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
@@ -35,7 +36,7 @@ const CATEGORIES: { id: ProductCategoryType; name: string }[] = [
   { id: 'other-electronics', name: 'Other Electronics & Peripherals' },
 ]
 
-const QUICK_BRANDS = ['Samsung', 'LG', 'Apple', 'Sony', 'OnePlus', 'Logitech', 'boAt', 'Bosch', 'TP-Link']
+const QUICK_BRANDS = ['Xiaomi', 'Infinix', 'Poco', 'Apple', 'Vivo', 'OPPO', 'Nothing', 'Motorola', 'Samsung', 'OnePlus']
 
 export const AddStockModal: React.FC<AddStockModalProps> = ({ isOpen, onClose, onSuccess }) => {
   // Lookup state
@@ -61,6 +62,15 @@ export const AddStockModal: React.FC<AddStockModalProps> = ({ isOpen, onClose, o
   const [warranty, setWarranty] = useState('1 Year Official Brand Warranty')
   const [badgeText, setBadgeText] = useState('')
   const [specs, setSpecs] = useState<IcecatSpecItem[]>([])
+
+  // Product Variants state (Flipkart / Amazon Architecture)
+  const [variants, setVariants] = useState<{
+    id: string
+    name: string
+    price: string
+    originalPrice: string
+    stockQuantity: string
+  }[]>([])
 
   // Image handling
   const [imageUrl, setImageUrl] = useState('')
@@ -222,6 +232,32 @@ export const AddStockModal: React.FC<AddStockModalProps> = ({ isOpen, onClose, o
     setSpecs((prev) => prev.filter((_, idx) => idx !== index))
   }
 
+  // Variant management handlers (Flipkart / Amazon Architecture)
+  const handleAddVariant = (presetName?: string) => {
+    const nextIdx = variants.length + 1
+    const defaultName = presetName || (nextIdx === 1 ? '8GB + 128GB' : nextIdx === 2 ? '8GB + 256GB' : nextIdx === 3 ? '12GB + 512GB' : `Variant ${nextIdx}`)
+    setVariants((prev) => [
+      ...prev,
+      {
+        id: `var-new-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+        name: defaultName,
+        price: sellingPrice || '',
+        originalPrice: originalPrice || '',
+        stockQuantity: '10'
+      }
+    ])
+  }
+
+  const handleUpdateVariant = (id: string, field: 'name' | 'price' | 'originalPrice' | 'stockQuantity', value: string) => {
+    setVariants((prev) =>
+      prev.map((v) => (v.id === id ? { ...v, [field]: value } : v))
+    )
+  }
+
+  const handleRemoveVariant = (id: string) => {
+    setVariants((prev) => prev.filter((v) => v.id !== id))
+  }
+
   // Pre-save validation & duplicate check
   const handleSaveClick = async (forceBypassDuplicate = false) => {
     setFormError(null)
@@ -235,21 +271,41 @@ export const AddStockModal: React.FC<AddStockModalProps> = ({ isOpen, onClose, o
       return
     }
 
-    const priceNum = parseFloat(sellingPrice)
-    if (isNaN(priceNum) || priceNum <= 0) {
-      setFormError('Valid Showroom Selling Price (₹) is required.')
-      return
+    const validVariants = variants.filter((v) => v.name.trim() !== '')
+
+    let priceNum = parseFloat(sellingPrice)
+    let stockNum = parseInt(stockQuantity, 10)
+
+    if (validVariants.length > 0) {
+      for (const v of validVariants) {
+        const vp = parseFloat(v.price)
+        if (isNaN(vp) || vp <= 0) {
+          setFormError(`Variant "${v.name}" requires a valid positive selling price.`)
+          return
+        }
+      }
+      const variantPrices = validVariants.map((v) => parseFloat(v.price)).filter((p) => !isNaN(p) && p > 0)
+      if (isNaN(priceNum) || priceNum <= 0) {
+        priceNum = Math.min(...variantPrices)
+      }
+      const sumStock = validVariants.reduce((sum, v) => sum + (parseInt(v.stockQuantity, 10) || 0), 0)
+      if (isNaN(stockNum) || stockNum <= 0) {
+        stockNum = sumStock
+      }
+    } else {
+      if (isNaN(priceNum) || priceNum <= 0) {
+        setFormError('Valid Showroom Selling Price (₹) is required.')
+        return
+      }
+      if (isNaN(stockNum) || stockNum < 0) {
+        setFormError('Stock Quantity must be 0 or greater.')
+        return
+      }
     }
 
     const mrpNum = originalPrice.trim() ? parseFloat(originalPrice) : priceNum
     if (!isNaN(mrpNum) && mrpNum < priceNum) {
       setFormError('Showroom MRP (original price) cannot be lower than the selling price.')
-      return
-    }
-
-    const stockNum = parseInt(stockQuantity, 10)
-    if (isNaN(stockNum) || stockNum < 0) {
-      setFormError('Stock Quantity must be 0 or greater.')
       return
     }
 
@@ -261,6 +317,35 @@ export const AddStockModal: React.FC<AddStockModalProps> = ({ isOpen, onClose, o
         return
       }
     }
+
+    // Prepare formatted variants
+    const preparedVariants = validVariants.map((v, idx) => {
+      const vPrice = parseFloat(v.price) || priceNum
+      const vMrp = parseFloat(v.originalPrice) || Math.round(vPrice * 1.14)
+      const vStock = parseInt(v.stockQuantity, 10) || 0
+      return {
+        id: v.id || `var-${Date.now()}-${idx}`,
+        sku: `GC-${productBrand.substring(0, 3).toUpperCase()}-V${idx + 1}-${Math.floor(100 + Math.random() * 900)}`,
+        name: v.name.trim(),
+        price: vPrice,
+        originalPrice: vMrp >= vPrice ? vMrp : vPrice,
+        stockQuantity: vStock,
+        inStock: vStock > 0,
+        attributes: {
+          storage: v.name.trim()
+        }
+      }
+    })
+
+    const finalSellingPrice = preparedVariants.length > 0
+      ? Math.min(...preparedVariants.map((v) => v.price))
+      : priceNum
+    const finalStockQuantity = preparedVariants.length > 0
+      ? preparedVariants.reduce((sum, v) => sum + v.stockQuantity, 0)
+      : stockNum
+    const finalOriginalPrice = (!isNaN(mrpNum) && mrpNum >= finalSellingPrice)
+      ? mrpNum
+      : (preparedVariants.length > 0 && preparedVariants.find(v => v.price === finalSellingPrice)?.originalPrice) || finalSellingPrice
 
     // Proceed to create product
     setIsSaving(true)
@@ -310,19 +395,21 @@ export const AddStockModal: React.FC<AddStockModalProps> = ({ isOpen, onClose, o
       category,
       tagline: tagline.trim(),
       description: description.trim(),
-      sellingPrice: priceNum,
-      originalPrice: mrpNum,
-      stockQuantity: stockNum,
+      sellingPrice: finalSellingPrice,
+      originalPrice: finalOriginalPrice,
+      stockQuantity: finalStockQuantity,
       warranty: warranty.trim(),
       badge: badgeText.trim() || undefined,
       image: finalImageUrl,
       specs: filterCleanSpecs,
+      variants: preparedVariants,
     })
 
     setIsSaving(false)
 
     if (res.success && res.product && res.sku) {
       clearObjectUrl()
+      setVariants([])
       onSuccess(res.product, res.sku)
       onClose()
     } else {
@@ -721,6 +808,151 @@ export const AddStockModal: React.FC<AddStockModalProps> = ({ isOpen, onClose, o
                   </span>
                 </div>
               </div>
+            </div>
+
+            {/* Product Variants Configuration (Flipkart / Amazon Architecture) */}
+            <div className="p-4 rounded-xl border border-cyan-800/40 bg-slate-900/40 space-y-3">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <Layers className="w-4 h-4 text-cyan-400" />
+                  <span className="text-[11px] font-bold text-white uppercase tracking-wide">
+                    Product Variants ({variants.length})
+                  </span>
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-cyan-950/80 border border-cyan-800/60 text-cyan-300 font-mono">
+                    Flipkart / Amazon Architecture
+                  </span>
+                </div>
+                <Button
+                  type="button"
+                  size="sm"
+                  onClick={() => handleAddVariant()}
+                  className="bg-cyan-500/20 text-cyan-300 hover:bg-cyan-500/30 border border-cyan-500/30 text-xs h-7 px-2.5 rounded-lg flex items-center gap-1 font-semibold"
+                >
+                  <Plus className="w-3.5 h-3.5" /> Add Variant
+                </Button>
+              </div>
+
+              <p className="text-[11px] text-slate-400">
+                Optional: If this device has multiple RAM / Storage / Color options, add them below. Each variant has its own selling price and physical stock.
+              </p>
+
+              {/* Quick Preset Buttons */}
+              <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                <span className="text-[10px] text-slate-400 font-medium">Add Quick Presets:</span>
+                {['8GB + 128GB', '8GB + 256GB', '12GB + 256GB', '12GB + 512GB', '16GB + 512GB'].map((preset) => (
+                  <button
+                    key={preset}
+                    type="button"
+                    onClick={() => handleAddVariant(preset)}
+                    className="text-[10px] px-2.5 py-1 rounded-md bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700/60 transition-colors flex items-center gap-1 cursor-pointer font-medium"
+                  >
+                    <Plus className="w-2.5 h-2.5 text-cyan-400" />
+                    {preset}
+                  </button>
+                ))}
+              </div>
+
+              {/* Variants List */}
+              {variants.length > 0 && (
+                <div className="space-y-2.5 max-h-64 overflow-y-auto pr-1 pt-1">
+                  {variants.map((v, idx) => (
+                    <div
+                      key={v.id}
+                      className="p-3 rounded-xl bg-slate-950 border border-slate-800/90 space-y-2 hover:border-slate-700/80 transition-colors shadow-sm"
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                          <span className="w-4 h-4 rounded-full bg-cyan-950 text-cyan-300 border border-cyan-800/60 flex items-center justify-center text-[9px] font-mono">
+                            {idx + 1}
+                          </span>
+                          Variant #{idx + 1}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveVariant(v.id)}
+                          className="text-slate-500 hover:text-rose-400 p-1 rounded-md hover:bg-rose-950/30 transition-colors"
+                          title="Remove variant"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-4 gap-2">
+                        <div className="sm:col-span-1">
+                          <label className="block text-[10px] text-slate-400 mb-0.5">Configuration</label>
+                          <input
+                            type="text"
+                            placeholder="e.g. 8GB + 128GB"
+                            value={v.name}
+                            onChange={(e) => handleUpdateVariant(v.id, 'name', e.target.value)}
+                            className="w-full px-2.5 py-1.5 bg-slate-900 border border-slate-800 rounded-lg text-white text-xs focus:outline-none focus:border-cyan-500 font-medium"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] text-emerald-400 mb-0.5 font-medium">Selling Price (₹)</label>
+                          <input
+                            type="number"
+                            placeholder="e.g. 24999"
+                            value={v.price}
+                            onChange={(e) => handleUpdateVariant(v.id, 'price', e.target.value)}
+                            className="w-full px-2.5 py-1.5 bg-slate-900 border border-emerald-900/60 rounded-lg text-emerald-300 text-xs focus:outline-none focus:border-emerald-400 font-mono font-bold"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] text-slate-400 mb-0.5">MRP / Original (₹)</label>
+                          <input
+                            type="number"
+                            placeholder="e.g. 27999"
+                            value={v.originalPrice}
+                            onChange={(e) => handleUpdateVariant(v.id, 'originalPrice', e.target.value)}
+                            className="w-full px-2.5 py-1.5 bg-slate-900 border border-slate-800 rounded-lg text-slate-300 text-xs focus:outline-none focus:border-cyan-500 font-mono"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] text-cyan-400 mb-0.5 font-medium">Stock Units</label>
+                          <input
+                            type="number"
+                            min="0"
+                            placeholder="10"
+                            value={v.stockQuantity}
+                            onChange={(e) => handleUpdateVariant(v.id, 'stockQuantity', e.target.value)}
+                            className="w-full px-2.5 py-1.5 bg-slate-900 border border-cyan-900/60 rounded-lg text-cyan-300 text-xs focus:outline-none focus:border-cyan-400 font-mono"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Live Variant Summary */}
+              {variants.length > 0 && (
+                <div className="pt-1 flex flex-wrap items-center justify-between gap-2 text-[11px] text-slate-400 bg-slate-950/70 p-2.5 rounded-xl border border-slate-800/80">
+                  <span>
+                    Lowest Variant Price:{' '}
+                    <strong className="text-emerald-400 font-mono">
+                      {formatINR(
+                        Math.min(
+                          ...variants
+                            .map((v) => parseFloat(v.price) || 0)
+                            .filter((p) => p > 0)
+                        ) || 0
+                      )}
+                    </strong>{' '}
+                    (Auto-synced as parent showroom price)
+                  </span>
+                  <span>
+                    Total Variant Stock:{' '}
+                    <strong className="text-cyan-400 font-mono">
+                      {variants.reduce(
+                        (sum, v) => sum + (parseInt(v.stockQuantity, 10) || 0),
+                        0
+                      )}{' '}
+                      units
+                    </strong>
+                  </span>
+                </div>
+              )}
             </div>
 
             {/* Product Image Section */}

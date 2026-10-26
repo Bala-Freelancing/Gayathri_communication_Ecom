@@ -14,11 +14,16 @@ import {
   X, 
   Save, 
   Plus,
-  FileSpreadsheet
+  FileSpreadsheet,
+  Trash2,
+  Sparkles,
+  Layers
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { AddStockModal } from '@/components/admin/AddStockModal'
+import { useHeroBanners } from '@/hooks/useHeroBanners'
+import { HeroSlideConfig } from '@/types/heroBanner'
 
 interface AdminProductRow {
   id: string
@@ -47,6 +52,55 @@ export const AdminProducts: React.FC = () => {
   const [selectedBrand, setSelectedBrand] = useState<string>('all')
   const [selectedStatus, setSelectedStatus] = useState<string>('all')
   const [toastMessage, setToastMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null)
+  
+  // Hero Banners Integration
+  const { slides, saveSlide } = useHeroBanners(true)
+
+  const isProductInHero = (productId: string) => {
+    return slides.some((s) => s.productId === productId)
+  }
+
+  const handleFeatureInHero = (product: AdminProductRow) => {
+    const brand = product.brand || 'Authorized'
+    const name = product.name || 'Flagship Product'
+    const shortLabel = name.length > 18 ? name.split(' ').slice(0, 3).join(' ') : name
+
+    const specs: string[] = []
+    if (Array.isArray(product.specs) && product.specs.length > 0) {
+      specs.push(...product.specs.slice(0, 3).map((s: any) => `${s.label}: ${s.value}`))
+    }
+    if (specs.length === 0) {
+      if (product.warranty) specs.push(product.warranty)
+      specs.push('Original Brand Sealed')
+      specs.push('Express Showroom Pickup')
+    }
+
+    const newSlide: HeroSlideConfig = {
+      id: `slide-${product.id}-${Date.now().toString(36)}`,
+      productId: product.id,
+      matchKeywords: [name.toUpperCase(), brand.toUpperCase()],
+      brandTag: `${brand} Official Authorized Retailer`,
+      badgeText: 'Verified Showroom Savings',
+      kicker: 'Featured Flagship Spotlight',
+      modelName: name,
+      headline: product.tagline || `${name} — Direct Brand Sealed`,
+      shortLabel,
+      description: product.tagline || `100% genuine brand sealed box with official manufacturer warranty and express counter pickup at Gayathri Communication.`,
+      specs: specs.slice(0, 3),
+      image: product.image || '/images/placeholder-product.svg',
+      imageAlt: name,
+      fallbackPrice: Number(product.price) || 0,
+      fallbackOriginalPrice: Number(product.originalPrice) || Number(product.price) || 0,
+      primaryCtaText: 'Inquire on WhatsApp',
+      secondaryCtaText: 'Quick View',
+      isActive: true,
+      orderIndex: slides.length,
+      updatedAt: new Date().toISOString(),
+    }
+
+    saveSlide(newSlide)
+    showToast(`🎉 "${product.name}" added to Homepage Hero Carousel!`, 'success')
+  }
   
   // Edit Modal State
   const [editingProduct, setEditingProduct] = useState<AdminProductRow | null>(null)
@@ -143,6 +197,8 @@ export const AdminProducts: React.FC = () => {
     }
   }
 
+  const [editVariants, setEditVariants] = useState<any[]>([])
+
   // Open Edit Modal
   const handleOpenEdit = (product: AdminProductRow) => {
     setEditingProduct(product)
@@ -153,6 +209,44 @@ export const AdminProducts: React.FC = () => {
       warranty: product.warranty || '1 Year Official Brand Warranty',
       stockQuantity: product.stockQuantity || 0
     })
+    setEditVariants(
+      Array.isArray(product.variants)
+        ? product.variants.map((v: any, idx: number) => ({
+            id: v.id || `var-${Date.now()}-${idx}`,
+            name: v.name || '',
+            price: v.price !== undefined ? String(v.price) : '',
+            originalPrice: v.originalPrice !== undefined ? String(v.originalPrice) : '',
+            stockQuantity: v.stockQuantity !== undefined ? String(v.stockQuantity) : '10',
+            sku: v.sku || ''
+          }))
+        : []
+    )
+  }
+
+  const handleAddVariantToEdit = (presetName?: string) => {
+    const nextIdx = editVariants.length + 1
+    const defaultName = presetName || (nextIdx === 1 ? '8GB + 128GB' : nextIdx === 2 ? '8GB + 256GB' : nextIdx === 3 ? '12GB + 512GB' : `Variant ${nextIdx}`)
+    setEditVariants((prev) => [
+      ...prev,
+      {
+        id: `var-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+        name: defaultName,
+        price: '',
+        originalPrice: '',
+        stockQuantity: '10',
+        sku: `GC-VAR-${nextIdx}`
+      }
+    ])
+  }
+
+  const handleUpdateEditVariant = (id: string, field: string, value: string) => {
+    setEditVariants((prev) =>
+      prev.map((v) => (v.id === id ? { ...v, [field]: value } : v))
+    )
+  }
+
+  const handleDeleteEditVariant = (id: string) => {
+    setEditVariants((prev) => prev.filter((v) => v.id !== id))
   }
 
   // Save Edit
@@ -164,16 +258,48 @@ export const AdminProducts: React.FC = () => {
     }
 
     setSavingEdit(true)
+
+    // Format variants if present
+    const formattedVariants = editVariants
+      .filter((v) => v.name.trim() !== '')
+      .map((v, idx) => {
+        const vPrice = parseFloat(v.price) || 0
+        const vMrp = parseFloat(v.originalPrice) || Math.round(vPrice * 1.14)
+        const vStock = parseInt(v.stockQuantity, 10) || 0
+        return {
+          id: v.id || `var-${Date.now()}-${idx}`,
+          sku: v.sku || `GC-VAR-${idx + 1}`,
+          name: v.name.trim(),
+          price: vPrice,
+          originalPrice: vMrp >= vPrice ? vMrp : vPrice,
+          stockQuantity: vStock,
+          inStock: vStock > 0,
+          attributes: {
+            storage: v.name.trim()
+          }
+        }
+      })
+
+    const hasNewVariants = formattedVariants.length > 0
+    const validPrices = formattedVariants.map((v) => v.price).filter((p) => p > 0)
+    const minPrice = validPrices.length > 0 ? Math.min(...validPrices) : editingProduct.price
+    const totalVariantStock = hasNewVariants
+      ? formattedVariants.reduce((sum, v) => sum + v.stockQuantity, 0)
+      : editFormData.stockQuantity
+
     const detailsRes = await productService.updateProductDetails(editingProduct.id, {
       name: editFormData.name,
       brand: editFormData.brand,
       tagline: editFormData.tagline,
       warranty: editFormData.warranty,
+      variants: formattedVariants,
+      sellingPrice: minPrice > 0 ? minPrice : undefined,
+      stockQuantity: totalVariantStock > 0 ? totalVariantStock : editFormData.stockQuantity
     })
 
     const stockRes = await productService.updateProductStock(
       editingProduct.id,
-      editFormData.stockQuantity
+      totalVariantStock > 0 ? totalVariantStock : editFormData.stockQuantity
     )
 
     setSavingEdit(false)
@@ -188,16 +314,48 @@ export const AdminProducts: React.FC = () => {
                 brand: editFormData.brand,
                 tagline: editFormData.tagline,
                 warranty: editFormData.warranty,
-                stockQuantity: editFormData.stockQuantity,
-                inStock: editFormData.stockQuantity > 0,
+                price: minPrice > 0 ? minPrice : p.price,
+                stockQuantity: totalVariantStock > 0 ? totalVariantStock : editFormData.stockQuantity,
+                inStock: (totalVariantStock > 0 || editFormData.stockQuantity > 0),
+                variants: formattedVariants
               }
             : p
         )
       )
       setEditingProduct(null)
-      showToast('Product details updated successfully!', 'success')
+      showToast('Product and variants updated successfully!', 'success')
     } else {
       showToast(detailsRes.error || stockRes.error || 'Failed to save changes', 'error')
+    }
+  }
+
+  const handleDeleteProduct = async (product: AdminProductRow) => {
+    if (!window.confirm(`Are you sure you want to permanently delete "${product.name}" from inventory?`)) {
+      return
+    }
+    const res = await productService.deleteProduct(product.id)
+    if (res.success) {
+      setProducts((prev) => prev.filter((p) => p.id !== product.id))
+      showToast(`Product "${product.name}" deleted successfully`, 'success')
+    } else {
+      showToast(res.error || 'Failed to delete product', 'error')
+    }
+  }
+
+  const handleClearAllStocks = async () => {
+    if (products.length === 0) return
+    const confirmation = window.prompt(
+      `WARNING: This will permanently remove all ${products.length} stock models from the showroom catalog.\n\nType "CLEAR" to confirm:`
+    )
+    if (confirmation !== 'CLEAR') {
+      return
+    }
+    const res = await productService.clearAllProducts()
+    if (res.success) {
+      setProducts([])
+      showToast('All showroom stock has been successfully cleared.', 'success')
+    } else {
+      showToast(res.error || 'Failed to clear all products', 'error')
     }
   }
 
@@ -210,6 +368,27 @@ export const AdminProducts: React.FC = () => {
           <Badge variant="outline" className="text-slate-400 border-slate-800 hidden sm:inline-flex">
             {filteredProducts.length} Models Listed
           </Badge>
+          {products.length > 0 && (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handleClearAllStocks}
+              className="text-xs font-semibold border-rose-900/60 bg-rose-950/40 text-rose-300 hover:bg-rose-900/60 hover:text-white gap-1.5 px-3 py-1.5 rounded-xl shadow-sm"
+              title="Clear all showroom products"
+            >
+              <Trash2 className="w-3.5 h-3.5 text-rose-400" /> Clear All Stocks
+            </Button>
+          )}
+          <Link to="/admin/hero-banners">
+            <Button
+              size="sm"
+              variant="outline"
+              className="text-xs font-semibold border-amber-500/40 bg-amber-950/30 text-amber-300 hover:bg-amber-900/50 hover:text-white gap-1.5 px-3 py-1.5 rounded-xl shadow-sm"
+              title="Manage Homepage Hero Carousel"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-amber-400" /> Hero Banners ({slides.length})
+            </Button>
+          </Link>
           <Link to="/admin/import">
             <Button
               size="sm"
@@ -333,8 +512,32 @@ export const AdminProducts: React.FC = () => {
                   </tr>
                 ) : filteredProducts.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="py-12 text-center text-slate-500">
-                      No matching products found.
+                    <td colSpan={6} className="py-14 text-center">
+                      {products.length === 0 ? (
+                        <div className="max-w-md mx-auto space-y-3">
+                          <div className="w-12 h-12 rounded-2xl bg-cyan-500/10 text-cyan-400 flex items-center justify-center mx-auto">
+                            <Package className="w-6 h-6" />
+                          </div>
+                          <div className="space-y-1">
+                            <h4 className="text-sm font-bold text-white font-['Outfit']">
+                              No Products in Inventory
+                            </h4>
+                            <p className="text-xs text-slate-400">
+                              Your showroom stock is currently empty. Click <strong>Add New Stock</strong> to add your models manually and upload photos.
+                            </p>
+                          </div>
+                          <Button
+                            onClick={() => setShowAddStockModal(true)}
+                            className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-semibold text-xs px-4 py-2 rounded-xl inline-flex items-center gap-1.5 shadow-lg shadow-cyan-500/20"
+                          >
+                            <Plus className="w-4 h-4" /> Add New Stock
+                          </Button>
+                        </div>
+                      ) : (
+                        <div className="text-slate-500 text-xs">
+                          No matching products found for the selected filters.
+                        </div>
+                      )}
                     </td>
                   </tr>
                 ) : (
@@ -349,9 +552,21 @@ export const AdminProducts: React.FC = () => {
                             className="w-10 h-10 object-contain bg-slate-900 rounded-lg p-1 border border-slate-800 flex-shrink-0"
                           />
                           <div className="min-w-0">
-                            <p className="font-bold text-white truncate max-w-[220px]">
-                              {product.name}
-                            </p>
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <p className="font-bold text-white truncate max-w-[200px]">
+                                {product.name}
+                              </p>
+                              {product.variants && product.variants.length > 0 && (
+                                <span className="inline-flex items-center gap-1 text-[9px] font-bold text-blue-300 bg-blue-950/80 border border-blue-500/40 px-1.5 py-0.5 rounded-full flex-shrink-0 shadow-sm shadow-blue-500/10">
+                                  ⚡ {product.variants.length} Variants
+                                </span>
+                              )}
+                              {isProductInHero(product.id) && (
+                                <span className="inline-flex items-center gap-1 text-[9px] font-bold text-amber-300 bg-amber-950/80 border border-amber-500/40 px-1.5 py-0.5 rounded-full flex-shrink-0 shadow-sm shadow-amber-500/10">
+                                  <Sparkles className="w-2.5 h-2.5 text-amber-400" /> In Hero
+                                </span>
+                              )}
+                            </div>
                             <p className="text-[11px] text-slate-400">
                               {product.brand}
                             </p>
@@ -371,7 +586,14 @@ export const AdminProducts: React.FC = () => {
 
                       {/* Price */}
                       <td className="py-3 px-3 font-semibold text-white">
-                        <div>{formatINR(product.price)}</div>
+                        {product.variants && product.variants.length > 1 ? (
+                          <div>
+                            <span className="text-[10px] text-cyan-400 font-normal">From </span>
+                            <span>{formatINR(product.price)}</span>
+                          </div>
+                        ) : (
+                          <div>{formatINR(product.price)}</div>
+                        )}
                         <div className="text-[10px] text-slate-500 line-through">
                           {formatINR(product.originalPrice)}
                         </div>
@@ -420,15 +642,50 @@ export const AdminProducts: React.FC = () => {
 
                       {/* Actions */}
                       <td className="py-3 px-4 text-right">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleOpenEdit(product)}
-                          className="h-8 gap-1.5 text-xs border-slate-800 hover:bg-slate-800 text-slate-300 hover:text-white"
-                        >
-                          <Edit3 className="w-3.5 h-3.5 text-cyan-400" />
-                          <span>Edit</span>
-                        </Button>
+                        <div className="flex items-center justify-end gap-1.5">
+                          {isProductInHero(product.id) ? (
+                            <Link to="/admin/hero-banners">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="h-8 gap-1.5 text-xs border-amber-500/50 bg-amber-950/40 text-amber-300 hover:bg-amber-900/60 hover:text-white px-2.5"
+                                title="This product is featured in Hero Banner. Click to manage/reorder"
+                              >
+                                <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                                <span className="hidden xl:inline">In Hero</span>
+                              </Button>
+                            </Link>
+                          ) : (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleFeatureInHero(product)}
+                              className="h-8 gap-1.5 text-xs border-slate-800 hover:border-amber-500/50 hover:bg-amber-950/30 text-slate-300 hover:text-amber-300 px-2.5"
+                              title="Feature this stock model in Homepage Hero Carousel"
+                            >
+                              <Sparkles className="w-3.5 h-3.5 text-slate-400 group-hover:text-amber-400" />
+                              <span className="hidden xl:inline">+ Hero</span>
+                            </Button>
+                          )}
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleOpenEdit(product)}
+                            className="h-8 gap-1.5 text-xs border-slate-800 hover:bg-slate-800 text-slate-300 hover:text-white"
+                          >
+                            <Edit3 className="w-3.5 h-3.5 text-cyan-400" />
+                            <span>Edit</span>
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleDeleteProduct(product)}
+                            className="h-8 text-xs border-slate-800 hover:border-rose-800 hover:bg-rose-950/50 text-slate-400 hover:text-rose-300 px-2.5"
+                            title="Delete product"
+                          >
+                            <Trash2 className="w-3.5 h-3.5 text-rose-400" />
+                          </Button>
+                        </div>
                       </td>
                     </tr>
                   ))
@@ -440,18 +697,18 @@ export const AdminProducts: React.FC = () => {
 
         {/* Edit Product Modal */}
         {editingProduct && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-            <div className="w-full max-w-lg bg-slate-950 border border-slate-800 rounded-3xl p-6 shadow-2xl space-y-5 animate-in fade-in zoom-in-95">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-sm overflow-y-auto">
+            <div className="w-full max-w-2xl bg-slate-950 border border-slate-800 rounded-3xl p-6 shadow-2xl space-y-5 animate-in fade-in zoom-in-95 my-auto max-h-[92vh] overflow-y-auto">
               <div className="flex items-center justify-between pb-3 border-b border-slate-800">
                 <div className="flex items-center gap-2">
                   <Package className="w-5 h-5 text-cyan-400" />
                   <h3 className="font-bold text-white text-base font-['Outfit']">
-                    Edit Product Specifications
+                    Edit Product & Variant Configurations
                   </h3>
                 </div>
                 <button
                   onClick={() => setEditingProduct(null)}
-                  className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-900"
+                  className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-900 transition-colors"
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -460,7 +717,7 @@ export const AdminProducts: React.FC = () => {
               <div className="space-y-4 text-xs">
                 <div>
                   <label className="block text-slate-400 font-semibold mb-1">
-                    Product Title
+                    Product Title / Model Name
                   </label>
                   <input
                     type="text"
@@ -468,11 +725,11 @@ export const AdminProducts: React.FC = () => {
                     onChange={(e) =>
                       setEditFormData({ ...editFormData, name: e.target.value })
                     }
-                    className="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded-xl text-white focus:outline-none focus:border-cyan-500"
+                    className="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded-xl text-white focus:outline-none focus:border-cyan-500 font-medium"
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className="block text-slate-400 font-semibold mb-1">
                       Brand Name
@@ -490,18 +747,30 @@ export const AdminProducts: React.FC = () => {
                   <div>
                     <label className="block text-slate-400 font-semibold mb-1">
                       Showroom Stock Units
+                      {editVariants.length > 0 && (
+                        <span className="text-[10px] text-cyan-400 ml-1.5 font-normal">
+                          (Sum of variants: {editVariants.reduce((sum, v) => sum + (parseInt(v.stockQuantity, 10) || 0), 0)})
+                        </span>
+                      )}
                     </label>
                     <input
                       type="number"
                       min="0"
-                      value={editFormData.stockQuantity}
+                      value={
+                        editVariants.length > 0
+                          ? editVariants.reduce((sum, v) => sum + (parseInt(v.stockQuantity, 10) || 0), 0)
+                          : editFormData.stockQuantity
+                      }
                       onChange={(e) =>
                         setEditFormData({
                           ...editFormData,
                           stockQuantity: parseInt(e.target.value) || 0,
                         })
                       }
-                      className="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded-xl text-white focus:outline-none focus:border-cyan-500"
+                      disabled={editVariants.length > 0}
+                      className={`w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded-xl text-white focus:outline-none focus:border-cyan-500 ${
+                        editVariants.length > 0 ? 'opacity-70 cursor-not-allowed' : ''
+                      }`}
                     />
                   </div>
                 </div>
@@ -532,6 +801,162 @@ export const AdminProducts: React.FC = () => {
                     }
                     className="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded-xl text-white focus:outline-none focus:border-cyan-500"
                   />
+                </div>
+
+                {/* Interactive Variant Management Section (Flipkart / Amazon Style) */}
+                <div className="p-4 rounded-2xl bg-slate-900/90 border border-slate-800 space-y-3">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <Layers className="w-4 h-4 text-cyan-400" />
+                      <span className="font-bold text-white text-xs">
+                        Product Variants ({editVariants.length})
+                      </span>
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-cyan-950/80 border border-cyan-800/60 text-cyan-300 font-mono">
+                        Flipkart / Amazon Architecture
+                      </span>
+                    </div>
+                    <Button
+                      type="button"
+                      size="sm"
+                      onClick={() => handleAddVariantToEdit()}
+                      className="bg-cyan-500/20 text-cyan-300 hover:bg-cyan-500/30 border border-cyan-500/30 text-xs h-7 px-2.5 rounded-lg flex items-center gap-1 font-semibold"
+                    >
+                      <Plus className="w-3.5 h-3.5" /> Add Variant
+                    </Button>
+                  </div>
+
+                  <p className="text-[11px] text-slate-400">
+                    Each model can have multiple RAM / Storage / Color configurations with separate selling prices and showroom stock.
+                  </p>
+
+                  {/* Quick Preset Buttons */}
+                  <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                    <span className="text-[10px] text-slate-400 font-medium">Quick Presets:</span>
+                    {['8GB + 128GB', '8GB + 256GB', '12GB + 256GB', '12GB + 512GB', '16GB + 512GB'].map((preset) => (
+                      <button
+                        key={preset}
+                        type="button"
+                        onClick={() => handleAddVariantToEdit(preset)}
+                        className="text-[10px] px-2.5 py-1 rounded-md bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700/60 transition-colors flex items-center gap-1 cursor-pointer font-medium"
+                      >
+                        <Plus className="w-2.5 h-2.5 text-cyan-400" />
+                        {preset}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Variant Rows List */}
+                  {editVariants.length === 0 ? (
+                    <div className="text-center py-6 border border-dashed border-slate-800 rounded-xl text-slate-400 space-y-2 bg-slate-950/40">
+                      <p className="text-xs">No individual variants configured yet for this model.</p>
+                      <Button
+                        type="button"
+                        size="sm"
+                        onClick={() => handleAddVariantToEdit()}
+                        className="bg-slate-800 hover:bg-slate-700 text-white text-xs h-7 px-3"
+                      >
+                        <Plus className="w-3.5 h-3.5 mr-1 text-cyan-400" /> Create First Variant
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="space-y-2.5 max-h-64 overflow-y-auto pr-1">
+                      {editVariants.map((v, idx) => (
+                        <div
+                          key={v.id || idx}
+                          className="p-3 rounded-xl bg-slate-950 border border-slate-800/90 space-y-2 hover:border-slate-700/80 transition-colors shadow-sm"
+                        >
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                              <span className="w-4 h-4 rounded-full bg-cyan-950 text-cyan-300 border border-cyan-800/60 flex items-center justify-center text-[9px] font-mono">
+                                {idx + 1}
+                              </span>
+                              Variant #{idx + 1}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteEditVariant(v.id)}
+                              className="text-slate-500 hover:text-rose-400 p-1 rounded-md hover:bg-rose-950/30 transition-colors"
+                              title="Delete variant"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                          <div className="grid grid-cols-1 sm:grid-cols-4 gap-2">
+                            <div className="sm:col-span-1">
+                              <label className="block text-[10px] text-slate-400 mb-0.5">Configuration</label>
+                              <input
+                                type="text"
+                                placeholder="e.g. 8GB + 256GB"
+                                value={v.name}
+                                onChange={(e) => handleUpdateEditVariant(v.id, 'name', e.target.value)}
+                                className="w-full px-2.5 py-1.5 bg-slate-900 border border-slate-800 rounded-lg text-white text-xs focus:outline-none focus:border-cyan-500 font-medium"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-[10px] text-emerald-400 mb-0.5 font-medium">Selling Price (₹)</label>
+                              <input
+                                type="number"
+                                placeholder="e.g. 29999"
+                                value={v.price}
+                                onChange={(e) => handleUpdateEditVariant(v.id, 'price', e.target.value)}
+                                className="w-full px-2.5 py-1.5 bg-slate-900 border border-emerald-900/60 rounded-lg text-emerald-300 text-xs focus:outline-none focus:border-emerald-400 font-mono font-bold"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-[10px] text-slate-400 mb-0.5">MRP / Original (₹)</label>
+                              <input
+                                type="number"
+                                placeholder="e.g. 34999"
+                                value={v.originalPrice}
+                                onChange={(e) => handleUpdateEditVariant(v.id, 'originalPrice', e.target.value)}
+                                className="w-full px-2.5 py-1.5 bg-slate-900 border border-slate-800 rounded-lg text-slate-300 text-xs focus:outline-none focus:border-cyan-500 font-mono"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-[10px] text-cyan-400 mb-0.5 font-medium">Stock Units</label>
+                              <input
+                                type="number"
+                                min="0"
+                                placeholder="10"
+                                value={v.stockQuantity}
+                                onChange={(e) => handleUpdateEditVariant(v.id, 'stockQuantity', e.target.value)}
+                                className="w-full px-2.5 py-1.5 bg-slate-900 border border-cyan-900/60 rounded-lg text-cyan-300 text-xs focus:outline-none focus:border-cyan-400 font-mono"
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Summary Note */}
+                  {editVariants.length > 0 && (
+                    <div className="pt-1 flex flex-wrap items-center justify-between gap-2 text-[11px] text-slate-400 bg-slate-950/70 p-2.5 rounded-xl border border-slate-800/80">
+                      <span>
+                        Lowest Selling Price:{' '}
+                        <strong className="text-emerald-400 font-mono">
+                          {formatINR(
+                            Math.min(
+                              ...editVariants
+                                .map((v) => parseFloat(v.price) || 0)
+                                .filter((p) => p > 0)
+                            ) || 0
+                          )}
+                        </strong>{' '}
+                        (Displayed as "From ₹..." on storefront)
+                      </span>
+                      <span>
+                        Total Stock:{' '}
+                        <strong className="text-cyan-400 font-mono">
+                          {editVariants.reduce(
+                            (sum, v) => sum + (parseInt(v.stockQuantity, 10) || 0),
+                            0
+                          )}{' '}
+                          units
+                        </strong>
+                      </span>
+                    </div>
+                  )}
                 </div>
               </div>
 

@@ -32,10 +32,10 @@ const MESSAGES: AnnouncementMessage[] = [
     highlight: 'Zero Compromise',
   },
   {
-    id: 'emi-schemes',
+    id: 'express-billing',
     icon: <CreditCard className="w-3.5 h-3.5 text-sky-400" />,
-    text: 'Zero Down Payment No-Cost EMI with Bajaj Finserv, HDFC, ICICI & SBI',
-    highlight: 'Instant Approval',
+    text: 'Seamless Counter Billing • UPI, Cards & Net Banking Accepted with GST Bill',
+    highlight: 'Fast Checkout',
   },
   {
     id: 'store-timing',
@@ -72,7 +72,7 @@ export const AnnouncementStrip: React.FC = () => {
 
   return (
     <div 
-      className="bg-neutral-900 text-neutral-300 text-xs border-b border-neutral-800 relative z-50 selection:bg-neutral-700 select-none"
+      className="bg-neutral-900 text-neutral-300 text-xs relative z-50 selection:bg-neutral-700 select-none"
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
       role="region"
@@ -81,7 +81,7 @@ export const AnnouncementStrip: React.FC = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2 flex items-center justify-between gap-4">
         
         {/* Left Side: Store Phone */}
-        <div className="hidden lg:flex items-center gap-2 text-neutral-400 text-[11px]">
+        <div className="hidden lg:flex items-center gap-2 text-neutral-400 text-xs">
           <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
           <span>Open Today: 10:00 AM – 9:30 PM</span>
         </div>
@@ -107,14 +107,9 @@ export const AnnouncementStrip: React.FC = () => {
                 className="flex items-center gap-2 text-center text-xs font-medium tracking-tight text-neutral-200"
               >
                 <span className="shrink-0">{current.icon}</span>
-                <span className="truncate max-w-[280px] sm:max-w-md md:max-w-xl">
+                <span className="truncate max-w-[280px] sm:max-w-md md:max-w-2xl">
                   {current.text}
                 </span>
-                {current.highlight && (
-                  <span className="hidden sm:inline-block text-[10px] uppercase tracking-wider font-semibold bg-neutral-800 text-neutral-300 px-2 py-0.5 rounded border border-neutral-700/80 shrink-0">
-                    {current.highlight}
-                  </span>
-                )}
               </motion.div>
             </AnimatePresence>
 
@@ -132,7 +127,7 @@ export const AnnouncementStrip: React.FC = () => {
         <div className="flex items-center gap-4 text-xs font-medium shrink-0">
           <a
             href={`tel:${storeDetails.phone.replace(/\s+/g, '')}`}
-            className="hidden sm:flex items-center gap-1.5 text-neutral-400 hover:text-white transition-colors text-[11px]"
+            className="hidden sm:flex items-center gap-1.5 text-neutral-400 hover:text-white transition-colors text-xs"
             title="Call Showroom"
           >
             <Phone className="w-3 h-3 text-neutral-400" />
@@ -143,7 +138,7 @@ export const AnnouncementStrip: React.FC = () => {
             href={`https://wa.me/${storeDetails.whatsapp}?text=Hi%20Gayathri%20Communication,%20I%20would%20like%20to%20know%20about%20your%20current%20offers.`}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-1 text-emerald-400 hover:text-emerald-300 transition-colors text-[11px] font-semibold"
+            className="flex items-center gap-1 text-emerald-400 hover:text-emerald-300 transition-colors text-xs font-semibold"
           >
             <span>WhatsApp Support</span>
           </a>

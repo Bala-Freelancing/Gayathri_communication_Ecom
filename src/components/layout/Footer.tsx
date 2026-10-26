@@ -11,18 +11,18 @@ import {
   Headphones,
   Monitor,
   ArrowUp,
-  Lock,
   ShieldCheck,
   CreditCard,
   Store
 } from 'lucide-react'
 import { useCartStore } from '@/store/useCartStore'
 import { ProductCategory } from '@/types/product'
-import { Link } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 
 const CURRENT_YEAR = new Date().getFullYear()
 
 export const Footer: React.FC = () => {
+  const navigate = useNavigate()
   const { setSelectedCategory } = useCartStore()
 
   const scrollToTop = () => {
@@ -31,14 +31,13 @@ export const Footer: React.FC = () => {
 
   const navigateCategory = (cat: ProductCategory) => {
     setSelectedCategory(cat)
-    const el = document.getElementById('products-section')
-    if (el) el.scrollIntoView({ behavior: 'smooth' })
+    navigate(`/category/${cat}`)
   }
 
   return (
-    <footer className="border-t border-neutral-800 bg-[#171717] text-neutral-400 text-xs select-none">
+    <footer className="bg-[#171717] text-neutral-400 text-xs select-none">
       {/* Refined Reassurance Ribbon (Understated, single-line, zero box clutter) */}
-      <div className="border-b border-neutral-800/80 py-4 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+      <div className="py-4 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
         <div className="flex flex-wrap items-center justify-between gap-4 text-xs text-neutral-400">
           <div className="flex items-center gap-2">
             <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
@@ -46,7 +45,7 @@ export const Footer: React.FC = () => {
           </div>
           <div className="flex items-center gap-2">
             <CreditCard className="w-4 h-4 text-amber-400 shrink-0" />
-            <span>0% Interest No-Cost EMI with Bajaj Finserv, HDFC & ICICI</span>
+            <span>Instant Counter Billing • Cards, UPI & Net Banking</span>
           </div>
           <div className="flex items-center gap-2">
             <Store className="w-4 h-4 text-sky-400 shrink-0" />
@@ -60,34 +59,33 @@ export const Footer: React.FC = () => {
         
         {/* Brand Summary */}
         <div className="md:col-span-5 space-y-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-white text-neutral-900 flex items-center justify-center font-extrabold font-['Outfit'] text-lg shadow-sm">
-              GC
+          <div className="space-y-2.5">
+            <div className="inline-block bg-white px-3 py-2 rounded-2xl shadow-sm">
+              <img 
+                src="/images/gayathri-logo.png" 
+                alt="Gayathri Communication - Mobiles & Home Appliances" 
+                className="h-10 sm:h-11 w-auto object-contain"
+              />
             </div>
-            <div>
-              <span className="font-extrabold text-xl tracking-tight text-white font-['Outfit']">
-                GAYATHRI COMMUNICATION
-              </span>
-              <p className="text-[10px] uppercase text-neutral-400 font-bold tracking-wider">
-                Authorized Electronics & Appliance Showroom
-              </p>
-            </div>
+            <p className="text-xs text-neutral-400 font-medium">
+              Authorized Multi-Brand Electronics & Appliance Showroom • Manachanallur
+            </p>
           </div>
-          <p className="text-neutral-400 leading-relaxed text-xs max-w-sm">
+          <p className="text-neutral-400 leading-relaxed text-sm max-w-sm">
             Manachanallur's premier showroom for original smartphones, 4K OLED Smart TVs, and home appliances. Direct factory-sealed stock, official warranties, and flexible financing.
           </p>
 
-          <div className="pt-2 flex flex-wrap gap-2 text-[11px] text-neutral-400">
-            <span className="bg-neutral-800/80 border border-neutral-700/60 px-2.5 py-1 rounded-md">Apple Authorized</span>
-            <span className="bg-neutral-800/80 border border-neutral-700/60 px-2.5 py-1 rounded-md">Samsung Partner</span>
-            <span className="bg-neutral-800/80 border border-neutral-700/60 px-2.5 py-1 rounded-md">Sony BRAVIA</span>
-            <span className="bg-neutral-800/80 border border-neutral-700/60 px-2.5 py-1 rounded-md">LG Living</span>
+          <div className="pt-2 flex flex-wrap gap-2 text-xs text-neutral-400">
+            <span className="bg-neutral-800/80 px-2.5 py-1 rounded-md">Apple Authorized</span>
+            <span className="bg-neutral-800/80 px-2.5 py-1 rounded-md">Samsung Partner</span>
+            <span className="bg-neutral-800/80 px-2.5 py-1 rounded-md">Sony BRAVIA</span>
+            <span className="bg-neutral-800/80 px-2.5 py-1 rounded-md">LG Living</span>
           </div>
         </div>
 
         {/* Categories */}
         <div className="md:col-span-3 space-y-3">
-          <p className="font-bold text-sm text-white font-['Outfit'] uppercase tracking-wider">
+          <p className="font-bold text-sm text-white font-['Outfit']">
             Departments
           </p>
           <ul className="space-y-2.5 text-xs">
@@ -149,7 +147,7 @@ export const Footer: React.FC = () => {
 
         {/* Showroom Location & Contact */}
         <div className="md:col-span-4 space-y-3">
-          <p className="font-bold text-sm text-white font-['Outfit'] uppercase tracking-wider">
+          <p className="font-bold text-sm text-white font-['Outfit']">
             Showroom Location
           </p>
           <div className="space-y-2.5 text-xs text-neutral-400 leading-relaxed">
@@ -169,7 +167,7 @@ export const Footer: React.FC = () => {
             </p>
             <p className="flex items-center gap-2">
               <Mail className="w-4 h-4 text-neutral-400 shrink-0" />
-              <a href={`mailto:${storeDetails.email}`} className="hover:text-white">
+              <a href={`mailto:${storeDetails.email}`} className="hover:text-white break-all text-xs">
                 {storeDetails.email}
               </a>
             </p>
@@ -179,16 +177,11 @@ export const Footer: React.FC = () => {
       </div>
 
       {/* Bottom Legal & Back to Top */}
-      <div className="border-t border-neutral-800/80 py-6 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 text-[11px] text-neutral-500">
+      <div className="py-6 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-neutral-400">
         <div className="flex flex-wrap items-center gap-4">
           <p>© {CURRENT_YEAR} Gayathri Communication. All rights reserved.</p>
           <span>•</span>
           <p>Manachanallur, Tamil Nadu 621005</p>
-          <span>•</span>
-          <Link to="/admin/login" className="flex items-center gap-1 text-neutral-400 hover:text-white transition-colors">
-            <Lock className="w-3 h-3" />
-            <span>Admin Portal</span>
-          </Link>
         </div>
 
         <button

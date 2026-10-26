@@ -30,14 +30,18 @@ export const AboutModal: React.FC<AboutModalProps> = ({ isOpen, onClose }) => {
         </button>
 
         <div>
+          <div className="mb-3">
+            <img 
+              src="/images/gayathri-logo.png" 
+              alt="Gayathri Communication - Mobiles & Home Appliances" 
+              className="h-11 sm:h-12 w-auto object-contain"
+            />
+          </div>
           <span className="text-[10px] uppercase tracking-wider font-bold text-neutral-700 bg-neutral-100 border border-neutral-200 px-3 py-1 rounded-full inline-flex items-center gap-1">
             <Store className="w-3 h-3 text-neutral-600" />
-            Authorized Electronics Showroom
+            Authorized Electronics & Appliances Showroom
           </span>
-          <h3 className="text-2xl font-bold font-['Outfit'] mt-3 text-neutral-900">
-            About {storeDetails.name}
-          </h3>
-          <p className="text-xs text-neutral-600 mt-1.5 leading-relaxed">
+          <p className="text-xs text-neutral-600 mt-2.5 leading-relaxed">
             {storeDetails.tagline}. We connect customers with genuine, box-packed smartphones, cinema Smart TVs, and inverter appliances with complete peace of mind.
           </p>
         </div>
@@ -54,8 +58,8 @@ export const AboutModal: React.FC<AboutModalProps> = ({ isOpen, onClose }) => {
           <div className="flex items-start gap-3 p-3.5 rounded-xl bg-neutral-50 border border-neutral-200/80 text-xs">
             <CreditCard className="w-4 h-4 text-neutral-700 shrink-0 mt-0.5" />
             <div>
-              <p className="font-bold text-neutral-900">Zero Down Payment EMI</p>
-              <p className="text-neutral-600 mt-0.5">Quick 10-minute financing with Bajaj Finserv, HDFC, ICICI, and major credit/debit cards.</p>
+              <p className="font-bold text-neutral-900">Instant Counter Billing</p>
+              <p className="text-neutral-600 mt-0.5">UPI, all major Credit/Debit Cards, Net Banking & Cash accepted with instant GST bill.</p>
             </div>
           </div>
 

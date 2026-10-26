@@ -89,12 +89,10 @@ export const FlashSaleBanner: React.FC = () => {
               </div>
 
               <div className="flex flex-wrap items-center justify-between text-xs text-neutral-300 border-t border-neutral-700/60 pt-2 gap-2">
-                {dealProduct.emiStartsAt > 0 && (
-                  <span className="flex items-center gap-1.5">
-                    <CreditCard className="w-3.5 h-3.5 text-amber-400" />
-                    No-Cost EMI from <strong className="text-white font-bold">{formatINR(dealProduct.emiStartsAt)}/mo*</strong>
-                  </span>
-                )}
+                <span className="flex items-center gap-1.5 text-neutral-300">
+                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>100% Brand Sealed Box Pack</span>
+                </span>
                 <span className="text-emerald-400 font-medium flex items-center gap-1">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
                   Same-Day Pickup in Store

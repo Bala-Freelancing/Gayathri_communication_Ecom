@@ -7,7 +7,13 @@ interface CartStore {
   cart: CartItem[]
   isCartOpen: boolean
   setIsCartOpen: (open: boolean) => void
-  addToCart: (product: Product, selectedVariant?: string, quantity?: number) => void
+  addToCart: (
+    product: Product,
+    selectedVariant?: string,
+    quantity?: number,
+    variantPrice?: number,
+    variantOriginalPrice?: number
+  ) => void
   removeFromCart: (productId: string, selectedVariant?: string) => void
   updateQuantity: (productId: string, quantity: number, selectedVariant?: string) => void
   clearCart: () => void
@@ -35,7 +41,7 @@ interface CartStore {
   getCartItemCount: () => number
   syncProductPrices: (latestProducts: Product[]) => void
   generateWhatsAppOrderUrl: () => string
-  generateProductInquiryUrl: (product: Product) => string
+  generateProductInquiryUrl: (product: Product, selectedVariant?: string, variantPrice?: number) => string
 }
 
 export const useCartStore = create<CartStore>((set, get) => ({
@@ -43,32 +49,51 @@ export const useCartStore = create<CartStore>((set, get) => ({
   isCartOpen: false,
   setIsCartOpen: (open) => set({ isCartOpen: open }),
 
-  addToCart: (product, selectedVariant, quantity = 1) => {
-    // Phase 7: Strict Out-of-Stock enforcement
-    // If stock is zero or product is out of stock, reject immediately
+  addToCart: (product, selectedVariant, quantity = 1, variantPrice, variantOriginalPrice) => {
+    // Strict Out-of-Stock enforcement
     if (!product.inStock || product.stockQuantity === 0) {
       return
     }
+
+    // Resolve variant-specific pricing if variant is chosen
+    const matchedVariant = selectedVariant && Array.isArray(product.variants)
+      ? product.variants.find(
+          (v) => v.name === selectedVariant || (v.options && v.options.includes(selectedVariant))
+        )
+      : undefined
+
+    const effectivePrice = variantPrice ?? matchedVariant?.price ?? product.price
+    const effectiveOriginalPrice = variantOriginalPrice ?? matchedVariant?.originalPrice ?? product.originalPrice
+    const effectiveStock = matchedVariant?.stockQuantity ?? product.stockQuantity ?? 999
 
     set((state) => {
       const existingIndex = state.cart.findIndex(
         (item) => item.product.id === product.id && item.selectedVariant === selectedVariant
       )
 
-      const maxStock = product.stockQuantity !== undefined ? product.stockQuantity : 999
-
       if (existingIndex > -1) {
         const updated = [...state.cart]
-        const newQty = Math.min(updated[existingIndex].quantity + quantity, maxStock)
+        const newQty = Math.min(updated[existingIndex].quantity + quantity, effectiveStock)
         updated[existingIndex].quantity = newQty
+        updated[existingIndex].selectedVariantPrice = effectivePrice
+        updated[existingIndex].selectedVariantOriginalPrice = effectiveOriginalPrice
         return { cart: updated, isCartOpen: true }
       }
 
-      const initialQty = Math.min(quantity, maxStock)
+      const initialQty = Math.min(quantity, effectiveStock)
       if (initialQty <= 0) return state
 
       return {
-        cart: [...state.cart, { product, quantity: initialQty, selectedVariant }],
+        cart: [
+          ...state.cart,
+          {
+            product,
+            quantity: initialQty,
+            selectedVariant,
+            selectedVariantPrice: effectivePrice,
+            selectedVariantOriginalPrice: effectiveOriginalPrice,
+          },
+        ],
         isCartOpen: true,
       }
     })
@@ -126,14 +151,19 @@ export const useCartStore = create<CartStore>((set, get) => ({
   setSelectedBrand: (brand) => set({ selectedBrand: brand }),
 
   getCartTotal: () => {
-    return get().cart.reduce((sum, item) => sum + item.product.price * item.quantity, 0)
+    return get().cart.reduce((sum, item) => {
+      const unitPrice = item.selectedVariantPrice ?? item.product.price
+      return sum + unitPrice * item.quantity
+    }, 0)
   },
 
   getCartSavings: () => {
-    return get().cart.reduce(
-      (sum, item) => sum + (item.product.originalPrice - item.product.price) * item.quantity,
-      0
-    )
+    return get().cart.reduce((sum, item) => {
+      const unitPrice = item.selectedVariantPrice ?? item.product.price
+      const origPrice = item.selectedVariantOriginalPrice ?? item.product.originalPrice
+      const savings = Math.max(0, origPrice - unitPrice)
+      return sum + savings * item.quantity
+    }, 0)
   },
 
   getCartItemCount: () => {
@@ -157,19 +187,27 @@ export const useCartStore = create<CartStore>((set, get) => ({
     if (cart.length === 0) return `https://wa.me/${storeDetails.whatsapp}?text=Hi%20Gayathri%20Communication,%20I%20would%20like%20to%20know%20about%20your%20latest%20offers.`
 
     const itemList = cart
-      .map(
-        (item, index) =>
-          `${index + 1}. *${item.product.name}* ${item.selectedVariant ? `(${item.selectedVariant})` : ''} x ${item.quantity} - ₹${(item.product.price * item.quantity).toLocaleString('en-IN')}`
-      )
+      .map((item, index) => {
+        const unitPrice = item.selectedVariantPrice ?? item.product.price
+        return `${index + 1}. *${item.product.name}* ${item.selectedVariant ? `[Variant: ${item.selectedVariant}]` : ''} x ${item.quantity} - ₹${(unitPrice * item.quantity).toLocaleString('en-IN')}`
+      })
       .join('\n')
 
-    const message = `🛍️ *NEW ORDER INQUIRY - GAYATHRI COMMUNICATION*\n\nHello, I would like to order/inquire about the following products:\n\n${itemList}\n\n*Total Amount:* ₹${getCartTotal().toLocaleString('en-IN')}\n\nPlease confirm availability and payment/EMI/pickup options.`
+    const cleanPhone = (storeDetails.whatsapp || '919842419358').replace(/\D/g, '')
+    const targetPhone = cleanPhone.startsWith('91') ? cleanPhone : `91${cleanPhone}`
 
-    return `https://wa.me/${storeDetails.whatsapp}?text=${encodeURIComponent(message)}`
+    const message = `🛍️ *NEW ORDER INQUIRY - GAYATHRI COMMUNICATION*\n\nHello, I would like to order/inquire about the following products:\n\n${itemList}\n\n*Total Amount:* ₹${getCartTotal().toLocaleString('en-IN')}\n\nPlease confirm stock availability and showroom pickup details.`
+
+    return `https://wa.me/${targetPhone}?text=${encodeURIComponent(message)}`
   },
 
-  generateProductInquiryUrl: (product: Product) => {
-    const message = `👋 Hi Gayathri Communication, I am interested in:\n\n*${product.name}*\nPrice: ₹${product.price.toLocaleString('en-IN')} (MRP: ₹${product.originalPrice.toLocaleString('en-IN')})\nEMI from: ₹${product.emiStartsAt.toLocaleString('en-IN')}/mo\n\nIs this currently available in stock at your store?`
-    return `https://wa.me/${storeDetails.whatsapp}?text=${encodeURIComponent(message)}`
+  generateProductInquiryUrl: (product: Product, selectedVariant?: string, variantPrice?: number) => {
+    const cleanPhone = (storeDetails.whatsapp || '919842419358').replace(/\D/g, '')
+    const targetPhone = cleanPhone.startsWith('91') ? cleanPhone : `91${cleanPhone}`
+    const price = variantPrice ?? product.price
+    const origPrice = product.originalPrice
+    const variantText = selectedVariant ? `\nVariant: *${selectedVariant}*` : ''
+    const message = `👋 Hi Gayathri Communication, I am interested in:\n\n*${product.name}*${variantText}\nPrice: ₹${price.toLocaleString('en-IN')}${origPrice > price ? ` (MRP: ₹${origPrice.toLocaleString('en-IN')})` : ''}\n\nIs this variant currently available in stock at your showroom?`
+    return `https://wa.me/${targetPhone}?text=${encodeURIComponent(message)}`
   },
 }))

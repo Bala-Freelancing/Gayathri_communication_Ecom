@@ -69,7 +69,7 @@ export const MoraHero: React.FC<MoraHeroProps> = ({ onBuyNowClick }) => {
           </h2>
         </div>
 
-        {/* Bottom-Right Monospace Subtext + EMI Callout + White Button matching Screenshot 1 */}
+        {/* Bottom-Right Monospace Subtext + White Button matching Screenshot 1 */}
         <div className="absolute bottom-4 right-0 z-20 text-right space-y-2.5">
           <p className="font-mono text-[11px] sm:text-xs text-neutral-400 leading-relaxed max-w-[200px] ml-auto">
             In a world full of<br />
@@ -77,7 +77,7 @@ export const MoraHero: React.FC<MoraHeroProps> = ({ onBuyNowClick }) => {
             a choice.
           </p>
           <p className="font-mono text-[11px] text-[#ff7700] font-semibold">
-            0% Down Payment EMI: ₹5,829/mo
+            Authorized Flagship Showroom
           </p>
           <button
             onClick={onBuyNowClick}

@@ -75,7 +75,7 @@ export const MoraFooter: React.FC = () => {
           <div className="flex items-center gap-4">
             <span>GST Verified Retailer</span>
             <span>•</span>
-            <span>Zero Down Payment EMI</span>
+            <span>Instant Counter Billing</span>
           </div>
         </div>
 

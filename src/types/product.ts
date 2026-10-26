@@ -9,8 +9,15 @@ export type ProductCategory =
 export type ProductCategoryType = Exclude<ProductCategory, 'all'>
 
 export interface ProductVariant {
+  id?: string
+  sku?: string
   name: string
-  options: string[]
+  price?: number
+  originalPrice?: number
+  stockQuantity?: number
+  inStock?: boolean
+  attributes?: Record<string, string>
+  options?: string[]
 }
 
 export interface Product {
@@ -47,6 +54,8 @@ export interface CartItem {
   product: Product
   quantity: number
   selectedVariant?: string
+  selectedVariantPrice?: number
+  selectedVariantOriginalPrice?: number
 }
 
 export interface StoreInfo {

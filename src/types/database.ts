@@ -320,6 +320,22 @@ export interface Database {
         }
         Returns: Json
       }
+      admin_delete_product: {
+        Args: {
+          p_product_id: string
+        }
+        Returns: Json
+      }
+      clear_all_products: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
+      admin_create_product: {
+        Args: {
+          p_product: Json
+        }
+        Returns: Json
+      }
     }
     Enums: {
       [_ in never]: never

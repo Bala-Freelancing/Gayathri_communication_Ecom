@@ -1,12 +1,14 @@
 import React, { useEffect } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { StorefrontPage } from '@/pages/StorefrontPage'
+import { CategoryPage } from '@/pages/CategoryPage'
 import { AdminLogin } from '@/pages/admin/AdminLogin'
 import { AdminDashboard } from '@/pages/admin/AdminDashboard'
 import { AdminPrices } from '@/pages/admin/AdminPrices'
 import { AdminProducts } from '@/pages/admin/AdminProducts'
 import { AdminInventory } from '@/pages/admin/AdminInventory'
 import { AdminStockImport } from '@/pages/admin/AdminStockImport'
+import { AdminHeroBanners } from '@/pages/admin/AdminHeroBanners'
 import { AdminSettings } from '@/pages/admin/AdminSettings'
 import { ProtectedRoute } from '@/components/admin/ProtectedRoute'
 import { useAuthStore } from '@/store/useAuthStore'
@@ -24,6 +26,11 @@ export function App() {
         {/* Customer Storefront (Home) */}
         <Route path="/" element={<StorefrontPage />} />
 
+        {/* Dedicated Category & Product Catalogue Pages */}
+        <Route path="/category/:categorySlug" element={<CategoryPage />} />
+        <Route path="/category" element={<CategoryPage />} />
+        <Route path="/products" element={<CategoryPage />} />
+
         {/* Administrator Authentication */}
         <Route path="/admin/login" element={<AdminLogin />} />
 
@@ -33,6 +40,30 @@ export function App() {
           element={
             <ProtectedRoute>
               <AdminDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/banners"
+          element={
+            <ProtectedRoute>
+              <AdminHeroBanners />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/hero-banners"
+          element={
+            <ProtectedRoute>
+              <AdminHeroBanners />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/banner"
+          element={
+            <ProtectedRoute>
+              <AdminHeroBanners />
             </ProtectedRoute>
           }
         />

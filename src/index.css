@@ -23,9 +23,30 @@ body {
   background-color: #fafaf9;
   color: #171717;
   font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 16px;
+  line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   overflow-x: hidden;
+}
+
+/* Taste standard: Running body text at 16px */
+p, li {
+  font-size: 16px;
+  line-height: 1.6;
+}
+
+/* Taste standard: Minimum readable text size */
+.text-xs {
+  font-size: 13px !important;
+  line-height: 1.4 !important;
+}
+
+/* Taste standard: Flat, quiet surfaces without static box-shadows on elements at rest */
+button:not(:hover):not(:active):not([role="dialog"]):not([role="menu"]),
+input:not(:focus),
+select:not(:focus) {
+  box-shadow: none !important;
 }
 
 /* Typography Helpers */
@@ -42,31 +63,31 @@ body {
   transform-style: preserve-3d;
 }
 
-/* Subtle elevation shadow */
-.shadow-subtle {
-  box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.04), 0 1px 2px -1px rgb(0 0 0 / 0.04);
-}
-
-.shadow-card {
-  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05), 0 2px 4px -2px rgb(0 0 0 / 0.05);
-}
-
-.shadow-card-hover {
-  box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.08), 0 8px 10px -6px rgb(0 0 0 / 0.04);
-}
-
 /* Refined light scrollbar */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
+
 ::-webkit-scrollbar-track {
   background: #f5f5f4;
 }
+
 ::-webkit-scrollbar-thumb {
   background: #d6d3d1;
-  border-radius: 9999px;
+  border-radius: 3px;
 }
+
 ::-webkit-scrollbar-thumb:hover {
   background: #a8a29e;
+}
+
+/* Continuous brand ribbon marquee animation */
+@keyframes marquee {
+  0% {
+    transform: translateX(0%);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
 }

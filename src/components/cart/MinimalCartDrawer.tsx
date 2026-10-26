@@ -79,7 +79,7 @@ export const MinimalCartDrawer: React.FC = () => {
                         </span>
                       )}
                       <span className="text-xs font-semibold text-neutral-900 mt-0.5 block font-['Outfit']">
-                        {formatINR(item.product.price)}
+                        {formatINR(item.selectedVariantPrice ?? item.product.price)}
                       </span>
                     </div>
 
