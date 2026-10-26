@@ -51,7 +51,7 @@ export const StoresModal: React.FC<StoresModalProps> = ({ isOpen, onClose }) => 
             <MapPin className="w-4 h-4 text-neutral-700 shrink-0 mt-0.5" />
             <div>
               <p className="font-bold text-neutral-900">{storeDetails.address}</p>
-              <p className="text-neutral-500 mt-0.5">{storeDetails.landmark}</p>
+              <p className="text-neutral-500 mt-0.5">Landmark: {storeDetails.landmark}</p>
             </div>
           </div>
 

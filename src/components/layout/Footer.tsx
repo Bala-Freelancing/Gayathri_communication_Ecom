@@ -151,10 +151,23 @@ export const Footer: React.FC = () => {
             Showroom Location
           </p>
           <div className="space-y-2.5 text-xs text-neutral-400 leading-relaxed">
-            <p className="flex items-start gap-2">
+            <div className="flex items-start gap-2">
               <MapPin className="w-4 h-4 text-neutral-400 shrink-0 mt-0.5" />
-              <span>{storeDetails.address}</span>
-            </p>
+              <div>
+                <span>{storeDetails.address}</span>
+                <p className="text-[11px] text-amber-400/90 font-medium mt-0.5">
+                  Landmark: {storeDetails.landmark}
+                </p>
+                <a
+                  href={storeDetails.mapUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-cyan-400 hover:text-cyan-300 text-[11px] font-semibold mt-1 transition-colors"
+                >
+                  <span>Get Directions on Google Maps →</span>
+                </a>
+              </div>
+            </div>
             <p className="flex items-center gap-2">
               <Clock className="w-4 h-4 text-neutral-400 shrink-0" />
               <span>{storeDetails.timing} (Open Daily)</span>
@@ -181,7 +194,7 @@ export const Footer: React.FC = () => {
         <div className="flex flex-wrap items-center gap-4">
           <p>© {CURRENT_YEAR} Gayathri Communication. All rights reserved.</p>
           <span>•</span>
-          <p>Manachanallur, Tamil Nadu 621005</p>
+          <p>Mannachanallur, Trichy 621005</p>
         </div>
 
         <button

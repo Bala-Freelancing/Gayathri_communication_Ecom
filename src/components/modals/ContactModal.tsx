@@ -256,7 +256,7 @@ export const ContactModal: React.FC<ContactModalProps> = ({ isOpen, onClose }) =
         )}
 
         <div className="pt-2 border-t border-neutral-100 flex items-center justify-between text-xs text-neutral-500">
-          <span>{storeDetails.address.split(',')[0]}, Manachanallur</span>
+          <span>Near LIC Office, Thuraiyur Rd, Mannachanallur</span>
           <a 
             href={`tel:${storeDetails.phone.replace(/\D/g, '')}`} 
             className="font-bold text-neutral-900 hover:underline"

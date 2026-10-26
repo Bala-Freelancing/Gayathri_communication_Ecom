@@ -3,8 +3,8 @@ import { Product, StoreInfo } from '@/types/product'
 export const storeDetails: StoreInfo = {
   name: "Gayathri Communication",
   tagline: "Authorized Retailer for Original Flagships, Smart TVs & Appliances",
-  address: "No114/3, Laksmi Complex, Thuraiyur - Tiruchirappalli Main Rd, Manachanallur, Tamil Nadu 621005",
-  landmark: "Near Main Bus Stop / Commercial Hub",
+  address: "116/2, L. F, Thuraiyur Road, Mannachanallur, Trichy 621005",
+  landmark: "Near LIC Office",
   phone: "+91 98424 19358",
   whatsapp: "919842419358",
   email: "contact@gayathricommunication.com",
@@ -12,7 +12,7 @@ export const storeDetails: StoreInfo = {
   isOpenNow: true,
   instagram: "https://instagram.com/gayathri_communication_",
   instagramHandle: "gayathri_communication_",
-  mapUrl: "https://maps.google.com/?q=No114/3,+Laksmi+complex,+Gayathri+communication,+Thuraiyur+-+Tiruchirappalli+Main+Rd,+Manachanallur,+Tamil+Nadu+621005",
+  mapUrl: "https://www.google.com/maps/search/?api=1&query=Gayathri+Communication,+116%2F2,+L.+F,+Thuraiyur+Road,+Near+LIC+Office,+Mannachanallur,+Trichy+621005",
   features: [
     {
       icon: "ShieldCheck",
