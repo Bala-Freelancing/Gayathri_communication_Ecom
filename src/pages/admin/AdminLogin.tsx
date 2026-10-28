@@ -90,7 +90,7 @@ export const AdminLogin: React.FC = () => {
                 <input
                   type="email"
                   required
-                  placeholder="admin@gayathricommunication.com"
+                  placeholder="Gopi@admin.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="w-full bg-slate-900 border border-slate-800 rounded-xl pl-10 pr-4 py-2.5 text-xs sm:text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/50 transition-all"
@@ -135,7 +135,7 @@ export const AdminLogin: React.FC = () => {
           </form>
 
           {/* Connection Status Helper */}
-          <div className="mt-6 pt-5 border-t border-slate-800/80 text-[11px] text-slate-400 space-y-2">
+          <div className="mt-6 pt-5 border-t border-slate-800/80 text-[11px] text-slate-400">
             <div className="flex items-center justify-between">
               <span className="text-slate-500">Database Connection:</span>
               {isConfigured ? (
@@ -149,24 +149,6 @@ export const AdminLogin: React.FC = () => {
                   Local Development Mode
                 </span>
               )}
-            </div>
-
-            <div className="p-2.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-300 text-[11px] space-y-1">
-              <p className="font-semibold text-cyan-400">Owner Admin Credentials:</p>
-              <p>Email: <code className="text-white">gayathri.communication.2017@gmail.com</code></p>
-              <p>Password: <code className="text-white">Gayathri@2026</code></p>
-              <div className="pt-1 flex items-center gap-3">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setEmail('gayathri.communication.2017@gmail.com')
-                    setPassword('Gayathri@2026')
-                  }}
-                  className="text-cyan-400 hover:underline font-semibold cursor-pointer"
-                >
-                  Auto-fill Owner Login →
-                </button>
-              </div>
             </div>
           </div>
         </div>

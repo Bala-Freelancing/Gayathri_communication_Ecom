@@ -26,22 +26,28 @@ export const useAuthStore = create<AuthState>((set) => ({
 
     // Check for local demo session first
     const demoSession = typeof window !== 'undefined' ? localStorage.getItem('gc_demo_admin_session') : null
+    const storedEmail = (typeof window !== 'undefined' && localStorage.getItem('gc_admin_email')) || ''
     if (demoSession === 'true') {
-      const storedEmail = (typeof window !== 'undefined' && localStorage.getItem('gc_admin_email')) || 'gayathri.communication.2017@gmail.com'
-      set({
-        user: {
-          id: 'demo-admin-id',
-          email: storedEmail,
-          app_metadata: {},
-          user_metadata: { name: 'Showroom Admin' },
-          aud: 'authenticated',
-          created_at: new Date().toISOString(),
-        } as User,
-        session: null,
-        isAdmin: true,
-        isLoading: false,
-      })
-      return
+      // Validate that the session belongs to Gopi@admin.com
+      if (storedEmail.toLowerCase() !== 'gopi@admin.com') {
+        localStorage.removeItem('gc_demo_admin_session')
+        localStorage.removeItem('gc_admin_email')
+      } else {
+        set({
+          user: {
+            id: 'gopi-admin-id',
+            email: 'Gopi@admin.com',
+            app_metadata: {},
+            user_metadata: { name: 'Gopi' },
+            aud: 'authenticated',
+            created_at: new Date().toISOString(),
+          } as User,
+          session: null,
+          isAdmin: true,
+          isLoading: false,
+        })
+        return
+      }
     }
 
     if (!isSupabaseConfigured()) {
@@ -114,21 +120,20 @@ export const useAuthStore = create<AuthState>((set) => ({
     set({ isLoading: true, error: null })
 
     const cleanEmail = email.trim().toLowerCase()
-    const isOwnerEmail =
-      cleanEmail === 'gayathri.communication.2017@gmail.com' ||
-      cleanEmail === 'admin@gayathricommunication.com'
+    const isOwnerEmail = cleanEmail === 'gopi@admin.com'
+    const isCorrectPassword = password === 'Gopi@9842'
 
     // If Supabase is not configured yet, support documented local admin credentials
     if (!isSupabaseConfigured()) {
-      if (isOwnerEmail && password === 'Gayathri@2026') {
+      if (isOwnerEmail && isCorrectPassword) {
         localStorage.setItem('gc_demo_admin_session', 'true')
-        localStorage.setItem('gc_admin_email', cleanEmail)
+        localStorage.setItem('gc_admin_email', 'Gopi@admin.com')
         set({
           user: {
-            id: 'demo-admin-id',
-            email: cleanEmail,
+            id: 'gopi-admin-id',
+            email: 'Gopi@admin.com',
             app_metadata: {},
-            user_metadata: { name: 'Showroom Admin' },
+            user_metadata: { name: 'Gopi' },
             aud: 'authenticated',
             created_at: new Date().toISOString(),
           } as User,
@@ -139,7 +144,7 @@ export const useAuthStore = create<AuthState>((set) => ({
         })
         return { success: true, error: null }
       } else {
-        const errorMsg = 'Invalid credentials. Please use your showroom owner credentials.'
+        const errorMsg = 'Invalid credentials. Please check your email and password.'
         set({ isLoading: false, error: errorMsg })
         return { success: false, error: errorMsg }
       }
@@ -153,15 +158,15 @@ export const useAuthStore = create<AuthState>((set) => ({
 
       if (error) {
         // Fallback for showroom owner credentials if remote auth user is not registered in Supabase auth yet
-        if (isOwnerEmail && password === 'Gayathri@2026') {
+        if (isOwnerEmail && isCorrectPassword) {
           localStorage.setItem('gc_demo_admin_session', 'true')
-          localStorage.setItem('gc_admin_email', cleanEmail)
+          localStorage.setItem('gc_admin_email', 'Gopi@admin.com')
           set({
             user: {
-              id: 'demo-admin-id',
-              email: cleanEmail,
+              id: 'gopi-admin-id',
+              email: 'Gopi@admin.com',
               app_metadata: {},
-              user_metadata: { name: 'Showroom Admin' },
+              user_metadata: { name: 'Gopi' },
               aud: 'authenticated',
               created_at: new Date().toISOString(),
             } as User,
