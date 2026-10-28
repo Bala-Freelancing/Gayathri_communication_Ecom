@@ -51,7 +51,9 @@ export const useCartStore = create<CartStore>((set, get) => ({
 
   addToCart: (product, selectedVariant, quantity = 1, variantPrice, variantOriginalPrice) => {
     // Strict Out-of-Stock enforcement
-    if (!product.inStock || product.stockQuantity === 0) {
+    const hasVariants = Array.isArray(product.variants) && product.variants.length > 0
+    const allVariantsOutOfStock = hasVariants && product.variants!.every((v) => !v.inStock || v.stockQuantity === 0)
+    if (!product.inStock || product.stockQuantity === 0 || allVariantsOutOfStock) {
       return
     }
 
@@ -61,6 +63,10 @@ export const useCartStore = create<CartStore>((set, get) => ({
           (v) => v.name === selectedVariant || (v.options && v.options.includes(selectedVariant))
         )
       : undefined
+
+    if (matchedVariant && (!matchedVariant.inStock || (matchedVariant.stockQuantity !== undefined && matchedVariant.stockQuantity === 0))) {
+      return
+    }
 
     const effectivePrice = variantPrice ?? matchedVariant?.price ?? product.price
     const effectiveOriginalPrice = variantOriginalPrice ?? matchedVariant?.originalPrice ?? product.originalPrice
@@ -205,9 +211,13 @@ export const useCartStore = create<CartStore>((set, get) => ({
     const cleanPhone = (storeDetails.whatsapp || '919842419358').replace(/\D/g, '')
     const targetPhone = cleanPhone.startsWith('91') ? cleanPhone : `91${cleanPhone}`
     const price = variantPrice ?? product.price
-    const origPrice = product.originalPrice
-    const variantText = selectedVariant ? `\nVariant: *${selectedVariant}*` : ''
-    const message = `👋 Hi Gayathri Communication, I am interested in:\n\n*${product.name}*${variantText}\nPrice: ₹${price.toLocaleString('en-IN')}${origPrice > price ? ` (MRP: ₹${origPrice.toLocaleString('en-IN')})` : ''}\n\nIs this variant currently available in stock at your showroom?`
+    const origPrice = product.originalPrice ?? price
+    const variantText = selectedVariant ? `\nVariant: ${selectedVariant}` : ''
+    const isOutOfStock = !product.inStock || product.stockQuantity === 0
+    const stockQuery = isOutOfStock
+      ? `This model is currently marked as Out of Stock on your showroom site. When will fresh stock arrive at your showroom, or can I place a priority counter pre-booking?`
+      : `Is this model currently available in stock at your showroom for same-day counter collection?`
+    const message = `👋 Hi Gayathri Communication, I am interested in:\n\n*${product.name}*${variantText}\nPrice: ₹${price.toLocaleString('en-IN')}${origPrice > price ? ` (MRP: ₹${origPrice.toLocaleString('en-IN')})` : ''}\n\n${stockQuery}`
     return `https://wa.me/${targetPhone}?text=${encodeURIComponent(message)}`
   },
 }))

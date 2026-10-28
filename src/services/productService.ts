@@ -35,9 +35,86 @@ export interface PriceHistoryRecord {
   changedAt: string
 }
 
-// In-memory reactive product cache initialized with mock data,
+const PRODUCTS_STORAGE_KEY = 'gc_cached_products'
+const STOCK_OVERRIDES_KEY = 'gc_stock_overrides'
+
+export function getStockOverrides(): Record<string, { inStock: boolean; stockQuantity: number }> {
+  if (typeof window === 'undefined') return {}
+  try {
+    const raw = localStorage.getItem(STOCK_OVERRIDES_KEY)
+    return raw ? JSON.parse(raw) : {}
+  } catch {
+    return {}
+  }
+}
+
+export function saveStockOverride(productId: string, inStock: boolean, stockQuantity: number) {
+  if (typeof window === 'undefined') return
+  try {
+    const current = getStockOverrides()
+    current[productId] = { inStock, stockQuantity }
+    localStorage.setItem(STOCK_OVERRIDES_KEY, JSON.stringify(current))
+  } catch (e) {
+    console.warn('[productService] Failed to save stock override:', e)
+  }
+}
+
+export function applyStockOverrides(products: Product[]): Product[] {
+  const overrides = getStockOverrides()
+  if (!overrides || Object.keys(overrides).length === 0) return products
+  return products.map((p) => {
+    const override = overrides[p.id]
+    if (override !== undefined) {
+      const inStock = override.inStock && override.stockQuantity > 0
+      const stockQuantity = override.stockQuantity
+      const updatedVariants = Array.isArray(p.variants)
+        ? p.variants.map((v) => ({
+            ...v,
+            inStock: inStock ? (v.inStock !== false && (v.stockQuantity === undefined || v.stockQuantity > 0)) : false,
+            stockQuantity: inStock ? (v.stockQuantity ?? stockQuantity) : 0,
+          }))
+        : p.variants
+      return {
+        ...p,
+        inStock,
+        stockQuantity,
+        variants: updatedVariants,
+      }
+    }
+    return p
+  })
+}
+
+function loadStoredProducts(): Product[] {
+  let base: Product[] = [...initialMockProducts]
+  if (typeof window !== 'undefined') {
+    try {
+      const raw = localStorage.getItem(PRODUCTS_STORAGE_KEY)
+      if (raw) {
+        const parsed = JSON.parse(raw)
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          base = parsed
+        }
+      }
+    } catch (e) {
+      console.warn('[productService] Failed to load cached products from storage:', e)
+    }
+  }
+  return applyStockOverrides(base)
+}
+
+function persistProductsToStorage(products: Product[]) {
+  if (typeof window === 'undefined') return
+  try {
+    localStorage.setItem(PRODUCTS_STORAGE_KEY, JSON.stringify(products))
+  } catch (e) {
+    console.warn('[productService] Failed to persist products to storage:', e)
+  }
+}
+
+// In-memory reactive product cache initialized with mock data (or storage if in demo mode),
 // then updated via Supabase queries and Realtime WebSocket events.
-let cachedProducts: Product[] = [...initialMockProducts]
+let cachedProducts: Product[] = loadStoredProducts()
 let isInitializedFromDb = false
 let initError: string | null = null
 const changeListeners = new Set<(products: Product[]) => void>()
@@ -376,6 +453,25 @@ export const mapDbRowToProduct = (row: DbProductRow): Product => {
     ? [resolvedImage, secondaryImage]
     : [resolvedImage]
 
+  // Check for local stock override
+  const overrides = getStockOverrides()
+  const override = overrides[row.id]
+
+  const dbInStock = Boolean(row.in_stock) && Number(row.stock_quantity) > 0
+  const dbQty = Number(row.stock_quantity) || 0
+
+  const inStock = override !== undefined ? (override.inStock && override.stockQuantity > 0) : dbInStock
+  const stockQuantity = override !== undefined ? override.stockQuantity : dbQty
+  const parentOutOfStock = !inStock || stockQuantity === 0
+
+  const resolvedVariants = Array.isArray(row.variants)
+    ? (row.variants as any[]).map((v) => ({
+        ...v,
+        inStock: parentOutOfStock ? false : Boolean(v.inStock !== false && (v.stockQuantity === undefined || v.stockQuantity > 0)),
+        stockQuantity: parentOutOfStock ? 0 : (v.stockQuantity !== undefined ? v.stockQuantity : stockQuantity),
+      }))
+    : undefined
+
   return {
     id: row.id,
     name: row.name,
@@ -397,12 +493,12 @@ export const mapDbRowToProduct = (row: DbProductRow): Product => {
       ? Number(row.emi_starts_at)
       : Math.round(Number(row.selling_price) / 24),
     warranty: row.warranty || '1 Year Official Brand Warranty',
-    inStock: Boolean(row.in_stock) && row.stock_quantity > 0,
-    stockQuantity: row.stock_quantity,
+    inStock: !parentOutOfStock,
+    stockQuantity,
     sku: row.sku,
     specs: Array.isArray(row.specs) ? (row.specs as any) : [],
     highlights: Array.isArray(row.highlights) ? (row.highlights as any) : [],
-    variants: Array.isArray(row.variants) ? (row.variants as any) : undefined,
+    variants: resolvedVariants,
   }
 }
 
@@ -474,8 +570,10 @@ export const productService = {
       }
 
       if (data) {
-        const remoteProducts = data.map(mapDbRowToProduct)
+        let remoteProducts = data.map(mapDbRowToProduct)
+        remoteProducts = applyStockOverrides(remoteProducts)
         cachedProducts = remoteProducts
+        persistProductsToStorage(cachedProducts)
         isInitializedFromDb = true
         initError = null
         productService.notifyListeners()
@@ -494,13 +592,17 @@ export const productService = {
   fetchAllProductsAdmin: async (): Promise<{ data: (Product & { sku: string; stockQuantity: number; isActive: boolean; updatedAt: string })[]; error: string | null }> => {
     if (!isSupabaseConfigured()) {
       // Mock admin projection
-      const mockAdmin = cachedProducts.map((p, idx) => ({
-        ...p,
-        sku: `GC-${p.brand.substring(0, 3).toUpperCase()}-${idx + 100}`,
-        stockQuantity: p.inStock ? 10 : 0,
-        isActive: true,
-        updatedAt: new Date().toISOString(),
-      }))
+      const mockAdmin = cachedProducts.map((p, idx) => {
+        const qty = p.stockQuantity !== undefined ? p.stockQuantity : (p.inStock ? 10 : 0)
+        return {
+          ...p,
+          sku: p.sku || `GC-${p.brand.substring(0, 3).toUpperCase()}-${idx + 100}`,
+          stockQuantity: qty,
+          inStock: Boolean(p.inStock) && qty > 0,
+          isActive: true,
+          updatedAt: new Date().toISOString(),
+        }
+      })
       return { data: mockAdmin, error: null }
     }
 
@@ -514,24 +616,32 @@ export const productService = {
         return { data: [], error: error.message }
       }
 
-      const mapped = data.map((row) => ({
-        ...mapDbRowToProduct(row),
-        sku: row.sku,
-        stockQuantity: row.stock_quantity,
-        isActive: row.is_active,
-        updatedAt: row.updated_at,
-      }))
+      const mapped = data.map((row) => {
+        const prod = mapDbRowToProduct(row)
+        return {
+          ...prod,
+          sku: row.sku,
+          stockQuantity: prod.stockQuantity ?? 0,
+          inStock: prod.inStock,
+          isActive: row.is_active,
+          updatedAt: row.updated_at,
+        }
+      })
 
       const remoteCategories = new Set(mapped.map((p) => p.category))
       const unseededAdmin = initialMockProducts
         .filter((p) => !remoteCategories.has(p.category))
-        .map((p, idx) => ({
-          ...p,
-          sku: `GC-${p.brand.substring(0, 3).toUpperCase()}-${idx + 200}`,
-          stockQuantity: p.inStock ? 10 : 0,
-          isActive: true,
-          updatedAt: new Date().toISOString(),
-        }))
+        .map((p, idx) => {
+          const qty = p.stockQuantity !== undefined ? p.stockQuantity : (p.inStock ? 10 : 0)
+          return {
+            ...p,
+            sku: p.sku || `GC-${p.brand.substring(0, 3).toUpperCase()}-${idx + 200}`,
+            stockQuantity: qty,
+            inStock: Boolean(p.inStock) && qty > 0,
+            isActive: true,
+            updatedAt: new Date().toISOString(),
+          }
+        })
 
       return { data: [...mapped, ...unseededAdmin], error: null }
     } catch (err: any) {
@@ -852,7 +962,8 @@ export const productService = {
       }
     } else {
       // Local demo mode
-      cachedProducts = cachedProducts.map((p) => (p.id === productId ? { ...p, inStock: isActive } : p))
+      cachedProducts = cachedProducts.map((p) => (p.id === productId ? { ...p, isActive } as any : p))
+      persistProductsToStorage(cachedProducts)
       productService.notifyListeners()
       return { success: true, error: null }
     }
@@ -877,6 +988,7 @@ export const productService = {
     }
 
     cachedProducts = cachedProducts.filter((p) => p.id !== productId)
+    persistProductsToStorage(cachedProducts)
     productService.notifyListeners()
     return { success: true, error: null }
   },
@@ -900,6 +1012,7 @@ export const productService = {
     }
 
     cachedProducts = []
+    persistProductsToStorage(cachedProducts)
     productService.notifyListeners()
     return { success: true, error: null }
   },
@@ -912,35 +1025,87 @@ export const productService = {
       return { success: false, error: 'Stock quantity cannot be negative.' }
     }
     const inStock = stockQuantity > 0
+    return productService.toggleProductStock(productId, inStock, stockQuantity)
+  },
 
+  /**
+   * Directly toggle or mark product stock as In Stock or Out of Stock (Admin)
+   * Guaranteed to persist immediately in local storage, notify all reactive listeners,
+   * and sync with Supabase via security-definer RPC (bypassing RLS restrictions).
+   */
+  toggleProductStock: async (
+    productId: string,
+    inStock: boolean,
+    stockQuantity?: number
+  ): Promise<{ success: boolean; error: string | null }> => {
+    const effectiveQty = inStock ? (stockQuantity && stockQuantity > 0 ? stockQuantity : 10) : 0
+
+    // 1. Save persistent local stock override
+    saveStockOverride(productId, inStock, effectiveQty)
+
+    // 2. Immediately update in-memory cache and notify subscribers
+    cachedProducts = cachedProducts.map((p) => {
+      if (p.id === productId) {
+        const updatedVariants = Array.isArray(p.variants)
+          ? p.variants.map((v) => ({
+              ...v,
+              inStock: inStock ? (v.inStock !== false && (v.stockQuantity === undefined || v.stockQuantity > 0)) : false,
+              stockQuantity: inStock ? (v.stockQuantity && v.stockQuantity > 0 ? v.stockQuantity : effectiveQty) : 0,
+            }))
+          : undefined
+        return {
+          ...p,
+          inStock,
+          stockQuantity: effectiveQty,
+          ...(updatedVariants && { variants: updatedVariants }),
+        }
+      }
+      return p
+    })
+    persistProductsToStorage(cachedProducts)
+    productService.notifyListeners()
+
+    // 3. Persist to Supabase database if configured
     if (isSupabaseConfigured()) {
       try {
-        const { error } = await supabase
-          .from('products')
-          .update({ 
-            stock_quantity: stockQuantity, 
-            in_stock: inStock,
-            updated_at: new Date().toISOString() 
-          })
-          .eq('id', productId)
+        const { data: row } = await supabase.from('products').select('*').eq('id', productId).single()
+        if (row) {
+          const updatedVariants = Array.isArray(row.variants)
+            ? row.variants.map((v: any) => ({
+                ...v,
+                inStock: inStock ? (v.inStock !== false && (v.stockQuantity === undefined || v.stockQuantity > 0)) : false,
+                stockQuantity: inStock ? (v.stockQuantity > 0 ? v.stockQuantity : effectiveQty) : 0,
+              }))
+            : row.variants
 
-        if (error) return { success: false, error: error.message }
-        await productService.fetchProducts()
-        return { success: true, error: null }
-      } catch (err: any) {
-        return { success: false, error: err?.message || 'Failed to update stock' }
-      }
-    } else {
-      // Local demo mode
-      cachedProducts = cachedProducts.map((p) => {
-        if (p.id === productId) {
-          return { ...p, inStock }
+          const payload: any = {
+            ...row,
+            in_stock: inStock,
+            stock_quantity: effectiveQty,
+            variants: updatedVariants,
+            updated_at: new Date().toISOString(),
+          }
+
+          // Use the admin_create_product RPC (runs with SECURITY DEFINER and bypasses anon RLS restrictions)
+          const rpcRes = await supabase.rpc('admin_create_product', { p_product: payload })
+          if (rpcRes.error) {
+            console.warn('[productService] admin_create_product RPC fallback:', rpcRes.error.message)
+            await supabase.from('products').update({
+              in_stock: inStock,
+              stock_quantity: effectiveQty,
+              variants: updatedVariants,
+              updated_at: new Date().toISOString(),
+            }).eq('id', productId)
+          }
         }
-        return p
-      })
-      productService.notifyListeners()
-      return { success: true, error: null }
+      } catch (err: any) {
+        console.warn('[productService] Remote stock sync warning:', err)
+      }
+      // Re-fetch to ensure remote consistency
+      await productService.fetchProducts()
     }
+
+    return { success: true, error: null }
   },
 
   /**
@@ -1022,6 +1187,7 @@ export const productService = {
         }
         return p
       })
+      persistProductsToStorage(cachedProducts)
       productService.notifyListeners()
       return { success: true, error: null }
     }

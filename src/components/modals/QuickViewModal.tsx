@@ -15,7 +15,9 @@ import {
   Star, 
   Check, 
   Layers,
-  Sparkles
+  Sparkles,
+  AlertTriangle,
+  AlertCircle
 } from 'lucide-react'
 
 export const QuickViewModal: React.FC = () => {
@@ -41,6 +43,8 @@ export const QuickViewModal: React.FC = () => {
   const concreteVariants = useMemo(() => {
     if (!quickViewProduct?.variants || quickViewProduct.variants.length === 0) return []
 
+    const isParentOutOfStock = !quickViewProduct.inStock || quickViewProduct.stockQuantity === 0
+
     // Backwards compatibility: if variant has options array and no price
     const first = quickViewProduct.variants[0]
     if (first.options && Array.isArray(first.options) && first.price === undefined) {
@@ -49,20 +53,24 @@ export const QuickViewModal: React.FC = () => {
         name: opt,
         price: quickViewProduct.price,
         originalPrice: quickViewProduct.originalPrice,
-        inStock: quickViewProduct.inStock,
-        stockQuantity: quickViewProduct.stockQuantity ?? 10,
+        inStock: isParentOutOfStock ? false : quickViewProduct.inStock,
+        stockQuantity: isParentOutOfStock ? 0 : (quickViewProduct.stockQuantity ?? 10),
       }))
     }
 
-    return quickViewProduct.variants.map((v, i) => ({
-      id: v.id || `var-${i}`,
-      name: v.name,
-      price: v.price ?? quickViewProduct.price,
-      originalPrice: v.originalPrice ?? quickViewProduct.originalPrice,
-      inStock: v.inStock ?? quickViewProduct.inStock,
-      stockQuantity: v.stockQuantity ?? quickViewProduct.stockQuantity ?? 10,
-      attributes: v.attributes,
-    }))
+    return quickViewProduct.variants.map((v, i) => {
+      const vInStock = isParentOutOfStock ? false : (v.inStock ?? quickViewProduct.inStock)
+      const vQty = isParentOutOfStock ? 0 : (v.stockQuantity ?? quickViewProduct.stockQuantity ?? 10)
+      return {
+        id: v.id || `var-${i}`,
+        name: v.name,
+        price: v.price ?? quickViewProduct.price,
+        originalPrice: v.originalPrice ?? quickViewProduct.originalPrice,
+        inStock: vInStock && vQty > 0,
+        stockQuantity: vQty,
+        attributes: v.attributes,
+      }
+    })
   }, [quickViewProduct])
 
   if (!quickViewProduct) return null
@@ -74,7 +82,7 @@ export const QuickViewModal: React.FC = () => {
     ? activeVariant.originalPrice
     : quickViewProduct.originalPrice
   const currentStockQuantity = activeVariant?.stockQuantity ?? quickViewProduct.stockQuantity ?? 10
-  const isOutOfStock = !quickViewProduct.inStock || (activeVariant ? !activeVariant.inStock || currentStockQuantity === 0 : currentStockQuantity === 0)
+  const isOutOfStock = !quickViewProduct.inStock || quickViewProduct.stockQuantity === 0 || (activeVariant ? !activeVariant.inStock || currentStockQuantity === 0 : false)
 
   const discountPercent = currentOriginalPrice > currentPrice
     ? Math.round(((currentOriginalPrice - currentPrice) / currentOriginalPrice) * 100)
@@ -101,11 +109,14 @@ export const QuickViewModal: React.FC = () => {
               <img
                 src={activeImage}
                 alt={quickViewProduct.name}
-                className="max-h-full max-w-full object-contain drop-shadow-sm transition-transform duration-300"
+                className={`max-h-full max-w-full object-contain drop-shadow-sm transition-transform duration-300 ${
+                  isOutOfStock ? 'grayscale-[35%] opacity-80' : ''
+                }`}
               />
               {isOutOfStock ? (
                 <div className="absolute top-3 left-3">
-                  <span className="text-[11px] font-bold text-white bg-rose-600 px-2.5 py-0.5 rounded-md shadow-xs uppercase tracking-wider">
+                  <span className="text-xs font-bold text-white bg-rose-600 px-3 py-1 rounded-lg shadow-sm uppercase tracking-wider flex items-center gap-1.5">
+                    <AlertTriangle className="w-3.5 h-3.5" />
                     Out of Stock
                   </span>
                 </div>
@@ -117,7 +128,17 @@ export const QuickViewModal: React.FC = () => {
                 </div>
               )}
 
-              {concreteVariants.length > 1 && (
+              {/* Floating Out of Stock Center Pill on Image */}
+              {isOutOfStock && (
+                <div className="absolute inset-x-3 bottom-3 flex items-center justify-center pointer-events-none">
+                  <span className="bg-neutral-950/90 border border-neutral-700/80 backdrop-blur-md text-white text-[11px] font-bold uppercase tracking-wider px-3.5 py-1 rounded-full shadow-lg flex items-center gap-1.5">
+                    <AlertTriangle className="w-3.5 h-3.5 text-rose-400 shrink-0" />
+                    <span>Out Of Stock</span>
+                  </span>
+                </div>
+              )}
+
+              {concreteVariants.length > 1 && !isOutOfStock && (
                 <div className="absolute bottom-3 left-3">
                   <span className="text-[10px] font-semibold text-neutral-800 bg-white/95 backdrop-blur-sm border border-neutral-200/80 px-2 py-0.5 rounded-md shadow-xs flex items-center gap-1.5">
                     <Layers className="w-3 h-3 text-blue-600" />
@@ -172,6 +193,12 @@ export const QuickViewModal: React.FC = () => {
                   <span>{quickViewProduct.rating || 4.8}</span>
                   <span className="text-neutral-400 font-normal">({quickViewProduct.reviewCount || 15})</span>
                 </div>
+                {isOutOfStock && (
+                  <span className="inline-flex items-center gap-1 text-[11px] font-bold text-rose-700 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded">
+                    <AlertTriangle className="w-3 h-3 text-rose-600" />
+                    Out Of Stock
+                  </span>
+                )}
               </div>
 
               <DialogTitle className="text-xl sm:text-2xl font-bold text-neutral-900 font-['Outfit'] tracking-tight">
@@ -193,17 +220,29 @@ export const QuickViewModal: React.FC = () => {
                     MRP {formatINR(currentOriginalPrice)}
                   </span>
                 )}
-                {discountPercent > 0 && (
+                {discountPercent > 0 && !isOutOfStock && (
                   <span className="text-xs text-emerald-800 font-bold bg-emerald-50 border border-emerald-200/80 px-2 py-0.5 rounded-md">
                     Save {formatINR(currentOriginalPrice - currentPrice)} ({discountPercent}% Off)
                   </span>
                 )}
               </div>
 
-              <div className="flex items-center gap-1.5 text-xs text-emerald-700 font-medium">
-                <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                <span>100% Brand Sealed • Showroom Guarantee & GST Invoice</span>
-              </div>
+              {isOutOfStock ? (
+                <div className="mt-2 p-2.5 rounded-xl bg-rose-50 border border-rose-200/80 flex items-start gap-2 text-xs text-rose-800">
+                  <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+                  <div>
+                    <span className="font-bold text-rose-900 block">Currently Out of Stock at Showroom</span>
+                    <span className="text-[11px] text-rose-700 leading-relaxed block mt-0.5">
+                      This model is temporarily sold out in our Manachanallur showroom. Inquire on WhatsApp to check incoming restock arrival or reserve counter priority.
+                    </span>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex items-center gap-1.5 text-xs text-emerald-700 font-medium">
+                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                  <span>100% Brand Sealed • Showroom Guarantee & GST Invoice</span>
+                </div>
+              )}
             </div>
 
             {/* Flipkart / Amazon Style Variant Selector (Compact, Non-Overflowing Grid) */}
@@ -336,7 +375,7 @@ export const QuickViewModal: React.FC = () => {
                     className="w-full gap-2 font-semibold text-xs sm:text-sm h-11 rounded-xl shadow-sm whitespace-nowrap overflow-hidden"
                   >
                     <MessageCircle className="w-4 h-4 shrink-0" />
-                    <span className="truncate">WhatsApp Order</span>
+                    <span className="truncate">{isOutOfStock ? 'Inquire Restock on WhatsApp' : 'WhatsApp Order'}</span>
                   </Button>
                 </a>
               </div>

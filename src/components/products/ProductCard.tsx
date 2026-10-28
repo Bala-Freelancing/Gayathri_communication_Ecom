@@ -9,7 +9,8 @@ import {
   MessageCircle,
   Check,
   Layers,
-  ChevronRight
+  ChevronRight,
+  AlertTriangle
 } from 'lucide-react'
 import { Product } from '@/types/product'
 import { Button } from '@/components/ui/button'
@@ -48,7 +49,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
     : 0
 
   const isFavorite = isInWishlist(product.id)
-  const isOutOfStock = !product.inStock || product.stockQuantity === 0
+  const isOutOfStock = !product.inStock || product.stockQuantity === 0 || (hasMultipleVariants && product.variants!.every((v) => !v.inStock || v.stockQuantity === 0))
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.stopPropagation()
@@ -105,13 +106,16 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
                 target.src = '/images/placeholder-product.svg'
               }
             }}
-            className="max-h-full max-w-full object-contain group-hover/img:scale-105 transition-transform duration-500 drop-shadow-md"
+            className={`max-h-full max-w-full object-contain group-hover/img:scale-105 transition-transform duration-500 drop-shadow-md ${
+              isOutOfStock ? 'grayscale-[35%] opacity-80 group-hover/img:grayscale-0' : ''
+            }`}
           />
 
           {/* Top Badges */}
           <div className="absolute top-3 left-3 z-10 flex flex-col gap-1 items-start pointer-events-none">
             {isOutOfStock ? (
-              <span className="text-xs font-semibold bg-rose-600 text-white px-2.5 py-0.5 rounded-md">
+              <span className="text-xs font-bold bg-rose-600 text-white px-2.5 py-0.5 rounded-md shadow-xs uppercase tracking-wider flex items-center gap-1">
+                <AlertTriangle className="w-3 h-3 text-white" />
                 Out of Stock
               </span>
             ) : product.badge ? (
@@ -119,12 +123,22 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
                 {product.badge}
               </span>
             ) : null}
-            {discountPercent > 0 && (
+            {discountPercent > 0 && !isOutOfStock && (
               <span className="text-xs font-semibold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-md">
                 Save {discountPercent}%
               </span>
             )}
           </div>
+
+          {/* Floating Out of Stock Center Pill */}
+          {isOutOfStock && (
+            <div className="absolute inset-x-2 bottom-3 z-10 flex items-center justify-center pointer-events-none">
+              <span className="bg-neutral-950/90 border border-neutral-700/80 backdrop-blur-md text-white text-[10px] sm:text-[11px] font-bold uppercase tracking-wider px-3 py-1 rounded-full shadow-lg flex items-center gap-1.5">
+                <AlertTriangle className="w-3 h-3 text-rose-400 shrink-0" />
+                <span>Out Of Stock</span>
+              </span>
+            </div>
+          )}
 
           {/* Wishlist Button */}
           <button
@@ -242,10 +256,17 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
             )}
           </div>
 
-          <p className="text-xs text-emerald-700 font-medium mt-1 flex items-center gap-1.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block shrink-0"></span>
-            <span>100% Brand Sealed • Official Warranty</span>
-          </p>
+          {isOutOfStock ? (
+            <p className="text-xs text-rose-600 font-semibold mt-1 flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-rose-500 inline-block shrink-0 animate-pulse"></span>
+              <span>Currently Out of Stock</span>
+            </p>
+          ) : (
+            <p className="text-xs text-emerald-700 font-medium mt-1 flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block shrink-0"></span>
+              <span>100% Brand Sealed • Official Warranty</span>
+            </p>
+          )}
         </div>
 
         {/* Action Buttons Row */}
@@ -255,9 +276,9 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
               disabled
               variant="outline"
               size="sm"
-              className="col-span-9 sm:col-span-9 gap-1.5 text-xs font-semibold rounded-xl bg-neutral-200/90 text-neutral-800 cursor-not-allowed border-0"
+              className="col-span-9 sm:col-span-9 gap-1.5 text-xs font-semibold rounded-xl bg-neutral-100 text-neutral-400 cursor-not-allowed border border-neutral-200"
             >
-              <ShoppingBag className="w-3.5 h-3.5 opacity-60" />
+              <ShoppingBag className="w-3.5 h-3.5 opacity-40" />
               <span>Out of Stock</span>
             </Button>
           ) : (

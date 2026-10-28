@@ -11,6 +11,7 @@ import {
   EyeOff, 
   CheckCircle2, 
   AlertCircle, 
+  AlertTriangle,
   X, 
   Save, 
   Plus,
@@ -194,6 +195,43 @@ export const AdminProducts: React.FC = () => {
       )
     } else {
       showToast(res.error || 'Failed to update product status', 'error')
+    }
+  }
+
+  // Toggle stock status (In Stock / Out of Stock)
+  const handleToggleStock = async (product: AdminProductRow) => {
+    const isCurrentlyInStock = product.inStock && product.stockQuantity > 0
+    const willBeInStock = !isCurrentlyInStock
+    const nextQty = willBeInStock ? (product.stockQuantity > 0 ? product.stockQuantity : 10) : 0
+
+    const res = await productService.toggleProductStock(product.id, willBeInStock, nextQty)
+    if (res.success) {
+      setProducts((prev) =>
+        prev.map((p) =>
+          p.id === product.id
+            ? {
+                ...p,
+                inStock: willBeInStock,
+                stockQuantity: nextQty,
+                variants: Array.isArray(p.variants)
+                  ? p.variants.map((v) => ({
+                      ...v,
+                      inStock: willBeInStock,
+                      stockQuantity: willBeInStock ? (v.stockQuantity > 0 ? v.stockQuantity : nextQty) : 0,
+                    }))
+                  : p.variants,
+              }
+            : p
+        )
+      )
+      showToast(
+        willBeInStock
+          ? `Marked "${product.name}" as In Stock`
+          : `Marked "${product.name}" as Out of Stock`,
+        'success'
+      )
+    } else {
+      showToast(res.error || 'Failed to update stock status', 'error')
     }
   }
 
@@ -599,20 +637,43 @@ export const AdminProducts: React.FC = () => {
                         </div>
                       </td>
 
-                      {/* Stock Units */}
+                      {/* Stock Units & Toggle */}
                       <td className="py-3 px-3">
-                        <div className="flex items-center gap-1.5">
-                          <span
-                            className={`w-2 h-2 rounded-full ${
-                              product.inStock && product.stockQuantity > 0
-                                ? 'bg-emerald-400'
-                                : 'bg-rose-400'
-                            }`}
-                          />
-                          <span className="font-bold text-white">
-                            {product.stockQuantity ?? (product.inStock ? 10 : 0)}
-                          </span>
-                          <span className="text-[10px] text-slate-400">in showroom</span>
+                        <div className="space-y-1.5">
+                          <div className="flex items-center gap-1.5">
+                            <span
+                              className={`w-2 h-2 rounded-full ${
+                                product.inStock && product.stockQuantity > 0
+                                  ? 'bg-emerald-400'
+                                  : 'bg-rose-400'
+                              }`}
+                            />
+                            <span className="font-bold text-white">
+                              {product.stockQuantity ?? (product.inStock ? 10 : 0)}
+                            </span>
+                            <span className="text-[10px] text-slate-400">in showroom</span>
+                          </div>
+
+                          {/* Instant Stock Status Action */}
+                          {product.inStock && product.stockQuantity > 0 ? (
+                            <button
+                              onClick={() => handleToggleStock(product)}
+                              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-bold bg-rose-950/40 hover:bg-rose-900/60 text-rose-300 border border-rose-800/50 transition-colors shadow-xs cursor-pointer"
+                              title="Mark this model Out of Stock"
+                            >
+                              <AlertTriangle className="w-2.5 h-2.5 text-rose-400" />
+                              <span>Mark Out of Stock</span>
+                            </button>
+                          ) : (
+                            <button
+                              onClick={() => handleToggleStock(product)}
+                              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-bold bg-emerald-950/40 hover:bg-emerald-900/60 text-emerald-300 border border-emerald-800/50 transition-colors shadow-xs cursor-pointer"
+                              title="Mark this model In Stock"
+                            >
+                              <CheckCircle2 className="w-2.5 h-2.5 text-emerald-400" />
+                              <span>Mark In Stock</span>
+                            </button>
+                          )}
                         </div>
                       </td>
 
@@ -772,6 +833,34 @@ export const AdminProducts: React.FC = () => {
                         editVariants.length > 0 ? 'opacity-70 cursor-not-allowed' : ''
                       }`}
                     />
+                    <div className="flex items-center gap-2 pt-1.5">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditFormData((prev) => ({ ...prev, stockQuantity: 0 }))
+                          if (editVariants.length > 0) {
+                            setEditVariants((prev) => prev.map((v) => ({ ...v, stockQuantity: '0' })))
+                          }
+                        }}
+                        className="text-[10px] px-2 py-0.5 rounded-md bg-rose-950/50 hover:bg-rose-900/60 text-rose-300 border border-rose-800/60 transition-colors flex items-center gap-1 cursor-pointer font-semibold"
+                      >
+                        <AlertTriangle className="w-3 h-3 text-rose-400" />
+                        Mark Out of Stock (0)
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditFormData((prev) => ({ ...prev, stockQuantity: 10 }))
+                          if (editVariants.length > 0) {
+                            setEditVariants((prev) => prev.map((v) => ({ ...v, stockQuantity: '10' })))
+                          }
+                        }}
+                        className="text-[10px] px-2 py-0.5 rounded-md bg-emerald-950/50 hover:bg-emerald-900/60 text-emerald-300 border border-emerald-800/60 transition-colors flex items-center gap-1 cursor-pointer font-semibold"
+                      >
+                        <CheckCircle2 className="w-3 h-3 text-emerald-400" />
+                        Mark In Stock (10)
+                      </button>
+                    </div>
                   </div>
                 </div>
 

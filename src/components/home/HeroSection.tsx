@@ -9,7 +9,8 @@ import {
   CreditCard,
   Sparkles,
   Check,
-  ShoppingBag
+  ShoppingBag,
+  AlertTriangle
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useCartStore } from '@/store/useCartStore'
@@ -174,6 +175,8 @@ export const HeroSection: React.FC = () => {
     } as Product
   }, [products, slide])
 
+  const isOutOfStock = !resolvedProduct.inStock || resolvedProduct.stockQuantity === 0
+
   const discountPercent = resolvedProduct.originalPrice > resolvedProduct.price
     ? Math.round(((resolvedProduct.originalPrice - resolvedProduct.price) / resolvedProduct.originalPrice) * 100)
     : 0
@@ -183,6 +186,7 @@ export const HeroSection: React.FC = () => {
     : 0
 
   const handleAddToCart = () => {
+    if (isOutOfStock) return
     addToCart(resolvedProduct)
     setAddedRecently(true)
     setTimeout(() => setAddedRecently(false), 1600)
@@ -193,7 +197,9 @@ export const HeroSection: React.FC = () => {
   }
 
   const whatsAppMessage = encodeURIComponent(
-    `Hello Gayathri Communication, I am interested in the ${slide.modelName} (Price: ${formatINR(resolvedProduct.price)}) featured in your showroom spotlight banner. Is this in stock for same-day pickup?`
+    isOutOfStock
+      ? `Hello Gayathri Communication, I am interested in the ${slide.modelName} (Price: ${formatINR(resolvedProduct.price)}) featured in your showroom spotlight banner. It is marked Out of Stock. When will new units arrive at the showroom?`
+      : `Hello Gayathri Communication, I am interested in the ${slide.modelName} (Price: ${formatINR(resolvedProduct.price)}) featured in your showroom spotlight banner. Is this in stock for same-day pickup?`
   )
   const whatsAppUrl = `https://wa.me/${storeDetails.whatsapp}?text=${whatsAppMessage}`
 
@@ -227,6 +233,12 @@ export const HeroSection: React.FC = () => {
             <div className="lg:col-span-7 space-y-4 text-left order-2 lg:order-1">
               
               {/* Dominant Headline at Display Size */}
+              {isOutOfStock && (
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-rose-950/90 text-rose-300 border border-rose-800/80">
+                  <AlertTriangle className="w-3.5 h-3.5 text-rose-400" />
+                  <span>Currently Out of Stock in Showroom</span>
+                </div>
+              )}
               <h1 className="text-3xl sm:text-4xl lg:text-6xl font-extrabold text-white font-['Outfit'] tracking-tight leading-snug break-words">
                 {slide.modelName}
               </h1>
@@ -250,19 +262,28 @@ export const HeroSection: React.FC = () => {
                     )}
                   </div>
 
-                  {discountPercent > 0 && (
+                  {discountPercent > 0 && !isOutOfStock && (
                     <span className="text-xs font-bold text-emerald-300 bg-emerald-950/80 px-2.5 py-1 rounded-full">
                       Save {formatINR(savingsAmount)} ({discountPercent}% Off)
                     </span>
                   )}
                 </div>
 
-                <div className="flex items-center text-xs text-emerald-400 pt-1">
-                  <span className="flex items-center gap-1.5 font-medium">
-                    <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-                    <span>Official Brand Sealed • Showroom Guarantee</span>
-                  </span>
-                </div>
+                {isOutOfStock ? (
+                  <div className="flex items-center text-xs text-rose-400 pt-1">
+                    <span className="flex items-center gap-1.5 font-medium">
+                      <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse" />
+                      <span>Out of Stock in Showroom • Inquire on WhatsApp for Restock</span>
+                    </span>
+                  </div>
+                ) : (
+                  <div className="flex items-center text-xs text-emerald-400 pt-1">
+                    <span className="flex items-center gap-1.5 font-medium">
+                      <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+                      <span>Official Brand Sealed • Showroom Guarantee</span>
+                    </span>
+                  </div>
+                )}
               </div>
 
               {/* Key Specs Pills */}
@@ -280,28 +301,40 @@ export const HeroSection: React.FC = () => {
 
               {/* Interactive CTAs */}
               <div className="flex flex-wrap items-center gap-3 pt-1">
-                <Button
-                  onClick={handleAddToCart}
-                  variant="default"
-                  size="default"
-                  className={`gap-2 text-xs sm:text-sm font-semibold px-5 py-2.5 transition-colors cursor-pointer ${
-                    addedRecently 
-                      ? 'bg-emerald-600 hover:bg-emerald-700 text-white' 
-                      : 'bg-white hover:bg-neutral-100 text-neutral-900'
-                  }`}
-                >
-                  {addedRecently ? (
-                    <>
-                      <Check className="w-4 h-4" />
-                      <span>Added to Cart</span>
-                    </>
-                  ) : (
-                    <>
-                      <ShoppingBag className="w-4 h-4" />
-                      <span>Add to Cart</span>
-                    </>
-                  )}
-                </Button>
+                {isOutOfStock ? (
+                  <Button
+                    disabled
+                    variant="outline"
+                    size="default"
+                    className="gap-2 text-xs sm:text-sm font-semibold px-5 py-2.5 bg-neutral-800/80 text-neutral-400 border border-neutral-700 cursor-not-allowed"
+                  >
+                    <ShoppingBag className="w-4 h-4 opacity-40" />
+                    <span>Out of Stock</span>
+                  </Button>
+                ) : (
+                  <Button
+                    onClick={handleAddToCart}
+                    variant="default"
+                    size="default"
+                    className={`gap-2 text-xs sm:text-sm font-semibold px-5 py-2.5 transition-colors cursor-pointer ${
+                      addedRecently 
+                        ? 'bg-emerald-600 hover:bg-emerald-700 text-white' 
+                        : 'bg-white hover:bg-neutral-100 text-neutral-900'
+                    }`}
+                  >
+                    {addedRecently ? (
+                      <>
+                        <Check className="w-4 h-4" />
+                        <span>Added to Cart</span>
+                      </>
+                    ) : (
+                      <>
+                        <ShoppingBag className="w-4 h-4" />
+                        <span>Add to Cart</span>
+                      </>
+                    )}
+                  </Button>
+                )}
 
                 <a
                   href={whatsAppUrl}
@@ -314,7 +347,7 @@ export const HeroSection: React.FC = () => {
                     className="gap-2 text-xs sm:text-sm font-semibold text-neutral-200 hover:text-white hover:bg-neutral-800 bg-neutral-800/90 px-4 py-2.5 cursor-pointer border-0"
                   >
                     <MessageCircle className="w-4 h-4 text-emerald-400" />
-                    <span>Inquire on WhatsApp</span>
+                    <span>{isOutOfStock ? 'Inquire Restock on WhatsApp' : 'Inquire on WhatsApp'}</span>
                   </Button>
                 </a>
 

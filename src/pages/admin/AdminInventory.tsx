@@ -141,6 +141,42 @@ export const AdminInventory: React.FC = () => {
     }
   }
 
+  const handleToggleStockStatus = async (item: InventoryItem) => {
+    const currentQty =
+      editedQuantities[item.id] !== undefined
+        ? editedQuantities[item.id]
+        : item.stockQuantity
+    const willBeInStock = currentQty === 0
+    const nextQty = willBeInStock ? 10 : 0
+
+    setIsSaving(true)
+    const res = await productService.toggleProductStock(item.id, willBeInStock, nextQty)
+    setIsSaving(false)
+
+    if (res.success) {
+      setItems((prev) =>
+        prev.map((i) =>
+          i.id === item.id
+            ? { ...i, stockQuantity: nextQty, inStock: willBeInStock }
+            : i
+        )
+      )
+      setEditedQuantities((prev) => {
+        const next = { ...prev }
+        delete next[item.id]
+        return next
+      })
+      showToast(
+        willBeInStock
+          ? `Marked "${item.name}" as In Stock (10 units)`
+          : `Marked "${item.name}" as Out of Stock`,
+        'success'
+      )
+    } else {
+      showToast(res.error || 'Failed to update stock status', 'error')
+    }
+  }
+
   const handleDiscardChanges = () => {
     setEditedQuantities({})
   }
@@ -336,19 +372,20 @@ export const AdminInventory: React.FC = () => {
                   <th className="py-3.5 px-3">SKU</th>
                   <th className="py-3.5 px-3">Stock Condition</th>
                   <th className="py-3.5 px-3 text-center">Adjust Units</th>
-                  <th className="py-3.5 px-4 text-right">Showroom Units</th>
+                  <th className="py-3.5 px-3 text-center">Showroom Units</th>
+                  <th className="py-3.5 px-4 text-right">Stock Action</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800/60">
                 {loading ? (
                   <tr>
-                    <td colSpan={5} className="py-12 text-center text-slate-500">
+                    <td colSpan={6} className="py-12 text-center text-slate-500">
                       Loading stock units...
                     </td>
                   </tr>
                 ) : filteredItems.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="py-12 text-center text-slate-500">
+                    <td colSpan={6} className="py-12 text-center text-slate-500">
                       No products match this stock condition.
                     </td>
                   </tr>
@@ -448,7 +485,7 @@ export const AdminInventory: React.FC = () => {
                         </td>
 
                         {/* Current/Dirty Units */}
-                        <td className="py-3 px-4 text-right">
+                        <td className="py-3 px-3 text-center">
                           <span className="font-extrabold text-sm text-white font-mono">
                             {currentQty}
                           </span>
@@ -456,6 +493,31 @@ export const AdminInventory: React.FC = () => {
                             <span className="text-[10px] text-cyan-400 block font-semibold">
                               (was {item.stockQuantity})
                             </span>
+                          )}
+                        </td>
+
+                        {/* Quick Stock Action */}
+                        <td className="py-3 px-4 text-right">
+                          {currentQty === 0 ? (
+                            <button
+                              onClick={() => handleToggleStockStatus(item)}
+                              disabled={isSaving}
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-emerald-950/60 hover:bg-emerald-900/60 text-emerald-300 border border-emerald-800/60 transition-colors shadow-sm cursor-pointer"
+                              title="Mark this model as In Stock (10 units)"
+                            >
+                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                              <span>Mark In Stock</span>
+                            </button>
+                          ) : (
+                            <button
+                              onClick={() => handleToggleStockStatus(item)}
+                              disabled={isSaving}
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-rose-950/60 hover:bg-rose-900/60 text-rose-300 border border-rose-800/60 transition-colors shadow-sm cursor-pointer"
+                              title="Mark this model as Out of Stock"
+                            >
+                              <AlertTriangle className="w-3.5 h-3.5 text-rose-400" />
+                              <span>Mark Out of Stock</span>
+                            </button>
                           )}
                         </td>
                       </tr>

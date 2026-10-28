@@ -43,10 +43,13 @@ export const MinimalProductDetail: React.FC<MinimalProductDetailProps> = ({ prod
     ? activeVariant.originalPrice
     : product.originalPrice
 
+  const isOutOfStock = !product.inStock || product.stockQuantity === 0 || (activeVariant ? !activeVariant.inStock || activeVariant.stockQuantity === 0 : false)
+
   const images = product.gallery && product.gallery.length > 0 ? product.gallery : [product.image]
   const currentImage = images[selectedImageIndex] || product.image
 
   const handleBuyNow = () => {
+    if (isOutOfStock) return
     const variantLabel = activeVariant?.name || undefined
     addToCart(product, variantLabel, 1, currentPrice, currentOriginalPrice)
     onClose()
@@ -137,9 +140,16 @@ export const MinimalProductDetail: React.FC<MinimalProductDetailProps> = ({ prod
           {/* Right Column: Title, Dynamic Price, Flipkart/Amazon Variant Cards, Buy Now */}
           <div className="lg:col-span-5 space-y-5 text-left">
             <div>
-              <h2 className="text-xl sm:text-2xl font-bold text-neutral-900 font-['Outfit'] tracking-tight">
-                {product.name}
-              </h2>
+              <div className="flex items-center gap-2 flex-wrap">
+                <h2 className="text-xl sm:text-2xl font-bold text-neutral-900 font-['Outfit'] tracking-tight">
+                  {product.name}
+                </h2>
+                {isOutOfStock && (
+                  <span className="text-[10px] font-bold text-rose-700 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded-full uppercase">
+                    Out Of Stock
+                  </span>
+                )}
+              </div>
               <p className="text-xs sm:text-sm text-neutral-500 mt-0.5">
                 {getCategoryDisplayName(product.category)}
               </p>
@@ -173,18 +183,23 @@ export const MinimalProductDetail: React.FC<MinimalProductDetailProps> = ({ prod
                 <div className="grid grid-cols-2 gap-2">
                   {concreteVariants.map((v, idx) => {
                     const isSelected = selectedVariantIndex === idx
+                    const vOutOfStock = isOutOfStock || !v.inStock || v.stockQuantity === 0
                     return (
                       <button
                         key={v.id}
+                        disabled={vOutOfStock}
                         onClick={() => setSelectedVariantIndex(idx)}
-                        className={`p-3 rounded-2xl text-left border transition-all cursor-pointer ${
+                        className={`p-3 rounded-2xl text-left border transition-all ${
                           isSelected
                             ? 'bg-neutral-900 text-white border-neutral-900 shadow-sm'
-                            : 'bg-neutral-50 text-neutral-800 border-neutral-200 hover:bg-neutral-100 hover:border-neutral-300'
+                            : vOutOfStock
+                            ? 'bg-neutral-50 text-neutral-400 border-neutral-200 opacity-60 cursor-not-allowed'
+                            : 'bg-neutral-50 text-neutral-800 border-neutral-200 hover:bg-neutral-100 hover:border-neutral-300 cursor-pointer'
                         }`}
                       >
-                        <div className="text-xs font-bold font-['Outfit'] line-clamp-1">
-                          {v.name}
+                        <div className="text-xs font-bold font-['Outfit'] line-clamp-1 flex items-center justify-between">
+                          <span>{v.name}</span>
+                          {vOutOfStock && <span className="text-[9px] text-rose-500 font-bold uppercase">Sold Out</span>}
                         </div>
                         <div className={`text-sm font-extrabold mt-1 font-['Outfit'] ${isSelected ? 'text-white' : 'text-neutral-900'}`}>
                           {formatINR(v.price)}
@@ -198,12 +213,21 @@ export const MinimalProductDetail: React.FC<MinimalProductDetailProps> = ({ prod
 
             {/* Buy Now & WhatsApp Actions */}
             <div className="pt-1 flex flex-col sm:flex-row gap-2">
-              <button
-                onClick={handleBuyNow}
-                className="flex-1 py-3 px-6 rounded-full bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm shadow-md active:scale-95 transition-all text-center cursor-pointer"
-              >
-                Buy now {activeVariant ? `(${activeVariant.name})` : ''}
-              </button>
+              {isOutOfStock ? (
+                <button
+                  disabled
+                  className="flex-1 py-3 px-6 rounded-full bg-neutral-100 text-neutral-400 font-semibold text-sm border border-neutral-200 cursor-not-allowed text-center"
+                >
+                  Out of Stock
+                </button>
+              ) : (
+                <button
+                  onClick={handleBuyNow}
+                  className="flex-1 py-3 px-6 rounded-full bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm shadow-md active:scale-95 transition-all text-center cursor-pointer"
+                >
+                  Buy now {activeVariant ? `(${activeVariant.name})` : ''}
+                </button>
+              )}
 
               <a
                 href={generateProductInquiryUrl(product, activeVariant?.name, currentPrice)}
@@ -212,7 +236,7 @@ export const MinimalProductDetail: React.FC<MinimalProductDetailProps> = ({ prod
                 className="inline-flex items-center justify-center gap-1.5 py-3 px-5 rounded-full bg-emerald-500 hover:bg-emerald-600 text-white font-semibold text-sm shadow-md active:scale-95 transition-all"
               >
                 <MessageCircle className="w-4 h-4" />
-                <span>WhatsApp</span>
+                <span>{isOutOfStock ? 'Inquire Restock' : 'WhatsApp'}</span>
               </a>
             </div>
 

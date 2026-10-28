@@ -17,14 +17,19 @@ export const MoraProductModal: React.FC<MoraProductModalProps> = ({ product, onC
 
   if (!product) return null
 
+  const isOutOfStock = !product.inStock || product.stockQuantity === 0
+
   const handleAddToCart = () => {
+    if (isOutOfStock) return
     addToCart(product, selectedColor, quantity)
     onClose()
     setIsCartOpen(true)
   }
 
   const whatsAppUrl = `https://wa.me/${storeDetails.whatsapp}?text=${encodeURIComponent(
-    `👋 Hi Gayathri Communication, I am interested in purchasing:\n\n*${product.name}*\nPrice: ₹${product.price.toLocaleString('en-IN')}\nColor: ${selectedColor}\nQuantity: ${quantity}\n\nPlease confirm showroom availability and best counter offers.`
+    isOutOfStock
+      ? `👋 Hi Gayathri Communication, I am interested in *${product.name}* (Price: ₹${product.price.toLocaleString('en-IN')}). It is currently marked Out of Stock. When will new units arrive at your showroom?`
+      : `👋 Hi Gayathri Communication, I am interested in purchasing:\n\n*${product.name}*\nPrice: ₹${product.price.toLocaleString('en-IN')}\nColor: ${selectedColor}\nQuantity: ${quantity}\n\nPlease confirm showroom availability and best counter offers.`
   )}`
 
   return (
@@ -43,9 +48,16 @@ export const MoraProductModal: React.FC<MoraProductModalProps> = ({ product, onC
         {/* Header & Product Thumbnail */}
         <div className="flex items-start justify-between gap-4">
           <div className="space-y-1 text-left">
-            <span className="font-mono text-[10px] text-[#ff6a00] uppercase tracking-widest block">
-              {product.brand} • Authorized Showroom
-            </span>
+            <div className="flex items-center gap-2">
+              <span className="font-mono text-[10px] text-[#ff6a00] uppercase tracking-widest block">
+                {product.brand} • Authorized Showroom
+              </span>
+              {isOutOfStock && (
+                <span className="font-mono text-[9px] text-rose-400 bg-rose-950/80 border border-rose-800/80 uppercase px-2 py-0.5 rounded font-bold">
+                  Out Of Stock
+                </span>
+              )}
+            </div>
             <h3 className="font-serif text-2xl sm:text-3xl font-light text-white tracking-wide">
               {product.name}
             </h3>
@@ -138,12 +150,21 @@ export const MoraProductModal: React.FC<MoraProductModalProps> = ({ product, onC
               </button>
             </div>
 
-            <button
-              onClick={handleAddToCart}
-              className="flex-1 py-3 px-4 rounded-xl bg-white hover:bg-neutral-200 text-black font-mono text-xs font-bold tracking-wider transition-all active:scale-95 text-center uppercase"
-            >
-              {formatINR(product.price * quantity)} • Add to Cart
-            </button>
+            {isOutOfStock ? (
+              <button
+                disabled
+                className="flex-1 py-3 px-4 rounded-xl bg-neutral-800 text-neutral-500 font-mono text-xs font-bold tracking-wider cursor-not-allowed text-center uppercase"
+              >
+                Out of Stock
+              </button>
+            ) : (
+              <button
+                onClick={handleAddToCart}
+                className="flex-1 py-3 px-4 rounded-xl bg-white hover:bg-neutral-200 text-black font-mono text-xs font-bold tracking-wider transition-all active:scale-95 text-center uppercase"
+              >
+                {formatINR(product.price * quantity)} • Add to Cart
+              </button>
+            )}
           </div>
 
           <a
@@ -153,7 +174,7 @@ export const MoraProductModal: React.FC<MoraProductModalProps> = ({ product, onC
             className="w-full py-3 px-4 rounded-xl bg-[#ff6a00] hover:bg-[#ff7b1a] text-black font-mono text-xs font-bold tracking-wider flex items-center justify-center gap-2 shadow-lg transition-all"
           >
             <MessageSquare className="w-4 h-4 text-black" />
-            <span>Inquire / Order on WhatsApp (9842419358)</span>
+            <span>{isOutOfStock ? 'Inquire Restock on WhatsApp (9842419358)' : 'Inquire / Order on WhatsApp (9842419358)'}</span>
           </a>
         </div>
 

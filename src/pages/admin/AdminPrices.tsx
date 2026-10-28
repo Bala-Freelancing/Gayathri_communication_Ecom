@@ -890,9 +890,34 @@ export const AdminPrices: React.FC = () => {
                                 Modified
                               </span>
                             ) : (
-                              <span className="text-[10px] text-emerald-400 font-medium">
+                              <button
+                                onClick={async () => {
+                                  const nextStatus = !product.inStock
+                                  const res = await productService.toggleProductStock(product.id, nextStatus)
+                                  if (res.success) {
+                                    setProducts((prev) =>
+                                      prev.map((p) =>
+                                        p.id === product.id ? { ...p, inStock: nextStatus, stockQuantity: nextStatus ? 10 : 0 } : p
+                                      )
+                                    )
+                                    setFeedback({
+                                      type: 'success',
+                                      message: nextStatus
+                                        ? `Marked "${product.name}" as In Stock`
+                                        : `Marked "${product.name}" as Out of Stock`,
+                                    });
+                                    setTimeout(() => setFeedback(null), 4000);
+                                  }
+                                }}
+                                className={`text-[10px] px-2 py-0.5 rounded-full font-semibold border transition-colors cursor-pointer ${
+                                  product.inStock
+                                    ? 'text-emerald-400 bg-emerald-950/40 border-emerald-800/60 hover:bg-emerald-900/50'
+                                    : 'text-rose-400 bg-rose-950/40 border-rose-800/60 hover:bg-rose-900/50'
+                                }`}
+                                title="Click to toggle Stock Status"
+                              >
                                 {product.inStock ? 'In Stock' : 'Out of Stock'}
-                              </span>
+                              </button>
                             )}
                           </td>
 
