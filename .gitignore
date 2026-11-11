@@ -33,3 +33,7 @@ supabase/.temp/
 # Agent tooling
 .agents/
 .taste-skill/
+
+# Business spreadsheets (purchase cost / margins) must never be committed or served
+*.xls
+*.xlsx
