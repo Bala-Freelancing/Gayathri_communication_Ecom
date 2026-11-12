@@ -6,13 +6,14 @@ import {
   DialogDescription 
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
+import { Link } from 'react-router-dom'
+import { productPath } from '@/lib/productHelpers'
 import { useCartStore } from '@/store/useCartStore'
 import { formatINR } from '@/lib/utils'
 import { 
   ShoppingBag, 
   MessageCircle, 
   ShieldCheck, 
-  Star, 
   Check, 
   Layers,
   Sparkles,
@@ -188,11 +189,6 @@ export const QuickViewModal: React.FC = () => {
                 <span className="text-[11px] uppercase font-bold tracking-wider text-neutral-500 bg-neutral-100 px-2 py-0.5 rounded">
                   {quickViewProduct.brand} • Authorized Showroom
                 </span>
-                <div className="flex items-center gap-1 text-neutral-700 font-semibold text-xs bg-amber-50/80 border border-amber-200/60 px-2 py-0.5 rounded">
-                  <Star className="w-3 h-3 text-amber-500 fill-amber-500" />
-                  <span>{quickViewProduct.rating || 4.8}</span>
-                  <span className="text-neutral-400 font-normal">({quickViewProduct.reviewCount || 15})</span>
-                </div>
                 {isOutOfStock && (
                   <span className="inline-flex items-center gap-1 text-[11px] font-bold text-rose-700 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded">
                     <AlertTriangle className="w-3 h-3 text-rose-600" />
@@ -207,6 +203,13 @@ export const QuickViewModal: React.FC = () => {
               <DialogDescription className="text-xs sm:text-sm text-neutral-600 mt-0.5 line-clamp-2">
                 {quickViewProduct.tagline || quickViewProduct.description}
               </DialogDescription>
+              <Link
+                to={productPath(quickViewProduct)}
+                onClick={() => setQuickViewProduct(null)}
+                className="mt-1.5 inline-block text-xs font-semibold text-neutral-700 underline underline-offset-2 hover:text-neutral-950"
+              >
+                View full details &amp; share
+              </Link>
             </div>
 
             {/* Dynamic Price Box (Clean, responsive layout) */}

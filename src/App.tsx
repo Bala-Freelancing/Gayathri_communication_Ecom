@@ -1,24 +1,31 @@
-import React, { useEffect } from 'react'
+import React, { Suspense, lazy } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { StorefrontPage } from '@/pages/StorefrontPage'
-import { CategoryPage } from '@/pages/CategoryPage'
-import { AdminLogin } from '@/pages/admin/AdminLogin'
-import { AdminDashboard } from '@/pages/admin/AdminDashboard'
-import { AdminProducts } from '@/pages/admin/AdminProducts'
-import { AdminStockImport } from '@/pages/admin/AdminStockImport'
-import { AdminHeroBanners } from '@/pages/admin/AdminHeroBanners'
-import { ProtectedRoute } from '@/components/admin/ProtectedRoute'
-import { useAuthStore } from '@/store/useAuthStore'
+
+// Everything below the homepage is loaded on demand, so customers never
+// download the admin panel (or its Excel parser) just to browse the shop.
+const named = <T extends string>(loader: () => Promise<Record<T, React.ComponentType<any>>>, name: T) =>
+  lazy(() => loader().then((m) => ({ default: m[name] })))
+
+const CategoryPage = named(() => import('@/pages/CategoryPage'), 'CategoryPage')
+const ProductPage = named(() => import('@/pages/ProductPage'), 'ProductPage')
+const AdminLogin = named(() => import('@/pages/admin/AdminLogin'), 'AdminLogin')
+const AdminDashboard = named(() => import('@/pages/admin/AdminDashboard'), 'AdminDashboard')
+const AdminProducts = named(() => import('@/pages/admin/AdminProducts'), 'AdminProducts')
+const AdminStockImport = named(() => import('@/pages/admin/AdminStockImport'), 'AdminStockImport')
+const AdminHeroBanners = named(() => import('@/pages/admin/AdminHeroBanners'), 'AdminHeroBanners')
+const ProtectedRoute = named(() => import('@/components/admin/ProtectedRoute'), 'ProtectedRoute')
+
+const PageFallback = () => (
+  <div className="flex min-h-screen items-center justify-center bg-[#fafaf9]" aria-busy="true">
+    <div className="h-8 w-8 animate-spin rounded-full border-2 border-neutral-300 border-t-neutral-900 motion-reduce:animate-none" />
+  </div>
+)
 
 export function App() {
-  const initAuth = useAuthStore((state) => state.initAuth)
-
-  useEffect(() => {
-    initAuth()
-  }, [initAuth])
-
   return (
     <BrowserRouter>
+      <Suspense fallback={<PageFallback />}>
       <Routes>
         {/* Customer Storefront (Home) */}
         <Route path="/" element={<StorefrontPage />} />
@@ -27,6 +34,9 @@ export function App() {
         <Route path="/category/:categorySlug" element={<CategoryPage />} />
         <Route path="/category" element={<CategoryPage />} />
         <Route path="/products" element={<CategoryPage />} />
+
+        {/* Shareable product pages */}
+        <Route path="/product/:productId" element={<ProductPage />} />
 
         {/* Administrator Authentication */}
         <Route path="/admin/login" element={<AdminLogin />} />
@@ -89,6 +99,7 @@ export function App() {
         {/* Catch-all redirect to storefront */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
+      </Suspense>
     </BrowserRouter>
   )
 }

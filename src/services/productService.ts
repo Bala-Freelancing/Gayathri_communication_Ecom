@@ -1,6 +1,5 @@
 import { Product, StoreInfo, ProductCategory, ProductCategoryType } from '@/types/product'
 import {
-  productsData as initialMockProducts,
   storeDetails,
   brandPartners,
   customerReviews,
@@ -97,7 +96,10 @@ export function applyStockOverrides(products: Product[]): Product[] {
 }
 
 function loadStoredProducts(): Product[] {
-  let base: Product[] = [...initialMockProducts]
+  // Live mode starts from the last real catalogue this browser saw (instant
+  // first paint) or empty until the database responds. Demo data is loaded
+  // separately and only when no database is configured.
+  let base: Product[] = []
   if (typeof window !== 'undefined') {
     try {
       const raw = localStorage.getItem(PRODUCTS_STORAGE_KEY)
@@ -126,6 +128,13 @@ function persistProductsToStorage(products: Product[]) {
 // In-memory reactive product cache initialized with mock data (or storage if in demo mode),
 // then updated via Supabase queries and Realtime WebSocket events.
 let cachedProducts: Product[] = loadStoredProducts()
+
+if (typeof window !== 'undefined' && !isSupabaseConfigured() && cachedProducts.length === 0) {
+  import('@/data/demoProducts').then(({ productsData }) => {
+    cachedProducts = applyStockOverrides([...productsData])
+    productService.notifyListeners()
+  })
+}
 let isInitializedFromDb = false
 let initError: string | null = null
 const changeListeners = new Set<(products: Product[]) => void>()
@@ -639,22 +648,8 @@ export const productService = {
         }
       })
 
-      const remoteCategories = new Set(mapped.map((p) => p.category))
-      const unseededAdmin = initialMockProducts
-        .filter((p) => !remoteCategories.has(p.category))
-        .map((p, idx) => {
-          const qty = p.stockQuantity !== undefined ? p.stockQuantity : (p.inStock ? 10 : 0)
-          return {
-            ...p,
-            sku: p.sku || `GC-${p.brand.substring(0, 3).toUpperCase()}-${idx + 200}`,
-            stockQuantity: qty,
-            inStock: Boolean(p.inStock) && qty > 0,
-            isActive: true,
-            updatedAt: new Date().toISOString(),
-          }
-        })
-
-      return { data: [...mapped, ...unseededAdmin], error: null }
+      // Only real database rows: demo products must never appear in admin.
+      return { data: mapped, error: null }
     } catch (err: any) {
       return { data: [], error: err?.message || 'Failed to fetch admin products' }
     }
@@ -1218,9 +1213,6 @@ export const productService = {
     if (!isSupabaseConfigured()) {
       return () => {}
     }
-
-    // Initial fetch on mount
-    productService.fetchProducts()
 
     // Ensure a single persistent Realtime channel across React StrictMode remounts
     if (!realtimeChannel) {

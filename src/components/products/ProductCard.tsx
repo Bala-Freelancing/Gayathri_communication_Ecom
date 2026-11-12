@@ -1,10 +1,10 @@
 import React, { useState } from 'react'
 import { motion } from 'framer-motion'
+import { Link, useNavigate } from 'react-router-dom'
 import { 
   Heart, 
   Eye, 
   ShoppingBag, 
-  Star, 
   ShieldCheck, 
   MessageCircle,
   Check,
@@ -17,6 +17,7 @@ import { Button } from '@/components/ui/button'
 import { useCartStore } from '@/store/useCartStore'
 import { formatINR } from '@/lib/utils'
 import { storeDetails } from '@/data/mockProducts'
+import { emiPerMonth, productPath, EMI_DISCLAIMER } from '@/lib/productHelpers'
 
 interface ProductCardProps {
   product: Product
@@ -25,6 +26,7 @@ interface ProductCardProps {
 export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
   const [isHovered, setIsHovered] = useState(false)
   const [addedRecently, setAddedRecently] = useState(false)
+  const navigate = useNavigate()
 
   const { 
     addToCart, 
@@ -87,7 +89,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
       <div>
         {/* Prominent Product Media Container */}
         <div 
-          onClick={() => setQuickViewProduct(product)}
+          onClick={() => navigate(productPath(product))}
           className="relative aspect-square w-full rounded-xl bg-neutral-50/80 p-4 flex items-center justify-center overflow-hidden cursor-pointer group/img transition-colors hover:bg-neutral-100/60"
         >
           {/* Product Image with Subtle Scale on Hover */}
@@ -106,7 +108,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
                 target.src = '/images/placeholder-product.svg'
               }
             }}
-            className={`max-h-full max-w-full object-contain group-hover/img:scale-105 transition-transform duration-500 drop-shadow-md ${
+            className={`max-h-full max-w-full object-contain mix-blend-multiply group-hover/img:scale-105 transition-transform duration-500 ${
               isOutOfStock ? 'grayscale-[35%] opacity-80 group-hover/img:grayscale-0' : ''
             }`}
           />
@@ -161,32 +163,25 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
           <div className="absolute inset-x-4 bottom-3 z-10 hidden sm:flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
             <span className="bg-white text-neutral-800 text-xs font-semibold px-3.5 py-1.5 rounded-xl flex items-center gap-1.5 shadow-sm">
               <Eye className="w-3.5 h-3.5 text-neutral-500" />
-              Quick View
+              View details
             </span>
           </div>
         </div>
 
         {/* Product Information */}
         <div className="pt-4 space-y-2">
-          {/* Brand & Star Rating */}
+          {/* Brand (no star ratings: the shop has no verified product reviews yet) */}
           <div className="flex items-center justify-between text-xs">
             <span className="font-semibold text-xs text-neutral-600">
               {product.brand}
             </span>
-            <div className="flex items-center gap-1 text-neutral-700 font-semibold text-xs">
-              <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
-              <span>{product.rating}</span>
-              <span className="text-neutral-400 font-normal">({product.reviewCount})</span>
-            </div>
           </div>
 
           {/* Product Name */}
-          <h3 
-            onClick={() => setQuickViewProduct(product)}
-            className="text-base sm:text-lg font-bold text-neutral-900 font-['Outfit'] hover:text-neutral-700 transition-colors line-clamp-1 cursor-pointer leading-snug"
-            title={product.name}
-          >
-            {product.name}
+          <h3 className="text-base sm:text-lg font-bold text-neutral-900 font-['Outfit'] line-clamp-1 leading-snug" title={product.name}>
+            <Link to={productPath(product)} className="hover:text-neutral-700 transition-colors">
+              {product.name}
+            </Link>
           </h3>
 
           {/* Flipkart / Amazon Style Variants Pills */}
@@ -256,6 +251,11 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
             )}
           </div>
 
+          {!isOutOfStock && emiPerMonth(minPrice) > 0 && (
+            <p className="text-xs text-neutral-600 mt-1" title={EMI_DISCLAIMER}>
+              EMI from <span className="font-semibold text-neutral-900">{formatINR(emiPerMonth(minPrice))}/month</span>*
+            </p>
+          )}
           {isOutOfStock ? (
             <p className="text-xs text-rose-600 font-semibold mt-1 flex items-center gap-1.5">
               <span className="w-1.5 h-1.5 rounded-full bg-rose-500 inline-block shrink-0 animate-pulse"></span>

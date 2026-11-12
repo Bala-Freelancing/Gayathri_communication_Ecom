@@ -43,6 +43,37 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+    <!-- Shop details for Google local search (no ratings: only real reviews belong there) -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "ElectronicsStore",
+        "name": "Gayathri Communication",
+        "url": "https://gayathri-communication-ecom.vercel.app/",
+        "image": "https://gayathri-communication-ecom.vercel.app/images/og-image.jpg",
+        "logo": "https://gayathri-communication-ecom.vercel.app/images/gayathri-logo.png",
+        "telephone": "+91-98424-19358",
+        "priceRange": "₹₹",
+        "address": {
+          "@type": "PostalAddress",
+          "streetAddress": "116/2, L. F, Thuraiyur Road, Near LIC Office",
+          "addressLocality": "Mannachanallur",
+          "addressRegion": "Tamil Nadu",
+          "postalCode": "621005",
+          "addressCountry": "IN"
+        },
+        "openingHoursSpecification": [
+          {
+            "@type": "OpeningHoursSpecification",
+            "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
+            "opens": "10:00",
+            "closes": "21:30"
+          }
+        ],
+        "hasMap": "https://www.google.com/maps/search/?api=1&query=Gayathri+Communication,+116%2F2,+L.+F,+Thuraiyur+Road,+Near+LIC+Office,+Mannachanallur,+Trichy+621005",
+        "sameAs": ["https://instagram.com/gayathri_communication_"]
+      }
+    </script>
   </head>
   <body class="bg-[#fafaf9] text-neutral-900 antialiased selection:bg-neutral-900 selection:text-white overflow-x-hidden font-['Inter']">
     <div id="root"></div>
