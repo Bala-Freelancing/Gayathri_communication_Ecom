@@ -14,6 +14,7 @@ import { AboutModal } from '@/components/modals/AboutModal'
 import { StoresModal } from '@/components/modals/StoresModal'
 import { ContactModal } from '@/components/modals/ContactModal'
 import { CibilFloatingButton } from '@/components/layout/CibilFloatingButton'
+import { NewBranchPopup } from '@/components/home/NewBranchPopup'
 
 export const StorefrontPage: React.FC = () => {
   const [isAboutOpen, setIsAboutOpen] = useState(false)
@@ -67,6 +68,9 @@ export const StorefrontPage: React.FC = () => {
 
       {/* Floating Bajaj Finserv CIBIL / EMI eligibility shortcut */}
       <CibilFloatingButton />
+
+      {/* New branch announcement: shows for 7s on first homepage visit per session */}
+      <NewBranchPopup />
     </div>
   )
 }
