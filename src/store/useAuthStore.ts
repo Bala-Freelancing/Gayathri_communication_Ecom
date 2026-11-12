@@ -2,6 +2,11 @@ import { create } from 'zustand'
 import { User, Session } from '@supabase/supabase-js'
 import { supabase, isSupabaseConfigured } from '@/lib/supabase'
 
+// SECURITY: admin access is granted ONLY by a real Supabase Auth session whose
+// user id is present in public.admin_users. There are no hardcoded credentials
+// and no localStorage-based "demo" sessions; anything in the browser bundle or
+// localStorage can be read or forged by any visitor.
+
 interface AuthState {
   user: User | null
   session: Session | null
@@ -14,6 +19,29 @@ interface AuthState {
   clearError: () => void
 }
 
+let initPromise: Promise<void> | null = null
+let authListenerAttached = false
+
+async function checkIsAdmin(userId: string): Promise<boolean> {
+  const { data, error } = await supabase
+    .from('admin_users')
+    .select('id, role')
+    .eq('id', userId)
+    .maybeSingle()
+  if (error || !data) return false
+  return data.role === 'admin' || data.role === 'super_admin'
+}
+
+// Remove leftovers from the old insecure demo login.
+if (typeof window !== 'undefined') {
+  try {
+    localStorage.removeItem('gc_demo_admin_session')
+    localStorage.removeItem('gc_admin_email')
+  } catch {
+    /* storage unavailable */
+  }
+}
+
 export const useAuthStore = create<AuthState>((set) => ({
   user: null,
   session: null,
@@ -21,195 +49,80 @@ export const useAuthStore = create<AuthState>((set) => ({
   isLoading: true,
   error: null,
 
-  initAuth: async () => {
-    set({ isLoading: true, error: null })
-
-    // Check for local demo session first
-    const demoSession = typeof window !== 'undefined' ? localStorage.getItem('gc_demo_admin_session') : null
-    const storedEmail = (typeof window !== 'undefined' && localStorage.getItem('gc_admin_email')) || ''
-    if (demoSession === 'true') {
-      // Validate that the session belongs to Gopi@admin.com
-      if (storedEmail.toLowerCase() !== 'gopi@admin.com') {
-        localStorage.removeItem('gc_demo_admin_session')
-        localStorage.removeItem('gc_admin_email')
-      } else {
-        set({
-          user: {
-            id: 'gopi-admin-id',
-            email: 'Gopi@admin.com',
-            app_metadata: {},
-            user_metadata: { name: 'Gopi' },
-            aud: 'authenticated',
-            created_at: new Date().toISOString(),
-          } as User,
-          session: null,
-          isAdmin: true,
-          isLoading: false,
-        })
-        return
-      }
-    }
-
-    if (!isSupabaseConfigured()) {
-      set({ user: null, session: null, isAdmin: false, isLoading: false })
-      return
-    }
-
-    try {
-      // 1. Get initial session from Supabase
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession()
-
-      if (sessionError) {
+  initAuth: () => {
+    // Run once per page load; repeated calls (ProtectedRoute, AdminLogin) reuse it.
+    if (initPromise) return initPromise
+    initPromise = (async () => {
+      if (!isSupabaseConfigured()) {
         set({ user: null, session: null, isAdmin: false, isLoading: false })
         return
       }
-
-      if (session?.user) {
-        // 2. Verify admin permissions against public.admin_users table
-        const { data: adminRecord } = await supabase
-          .from('admin_users')
-          .select('id, role')
-          .eq('id', session.user.id)
-          .single()
-
-        const isUserAdmin = Boolean(adminRecord && (adminRecord.role === 'admin' || adminRecord.role === 'super_admin'))
-
-        set({
-          user: session.user,
-          session,
-          isAdmin: isUserAdmin,
-          isLoading: false,
-        })
-      } else {
-        set({ user: null, session: null, isAdmin: false, isLoading: false })
-      }
-
-      // 3. Listen to auth state changes
-      supabase.auth.onAuthStateChange(async (_event, newSession) => {
-        if (newSession?.user) {
-          const { data: adminRecord } = await supabase
-            .from('admin_users')
-            .select('id, role')
-            .eq('id', newSession.user.id)
-            .single()
-
-          const isUserAdmin = Boolean(adminRecord && (adminRecord.role === 'admin' || adminRecord.role === 'super_admin'))
-
-          set({
-            user: newSession.user,
-            session: newSession,
-            isAdmin: isUserAdmin,
-            isLoading: false,
-          })
+      try {
+        const { data: { session } } = await supabase.auth.getSession()
+        if (session?.user) {
+          const isAdmin = await checkIsAdmin(session.user.id)
+          set({ user: session.user, session, isAdmin, isLoading: false })
         } else {
           set({ user: null, session: null, isAdmin: false, isLoading: false })
         }
-      })
-    } catch (err: any) {
-      set({
-        user: null,
-        session: null,
-        isAdmin: false,
-        isLoading: false,
-        error: err?.message || 'Authentication initialization error',
-      })
-    }
+
+        if (!authListenerAttached) {
+          authListenerAttached = true
+          supabase.auth.onAuthStateChange((_event, newSession) => {
+            // Defer DB work out of the auth callback (supabase-js recommendation).
+            setTimeout(async () => {
+              if (newSession?.user) {
+                const isAdmin = await checkIsAdmin(newSession.user.id)
+                set({ user: newSession.user, session: newSession, isAdmin, isLoading: false })
+              } else {
+                set({ user: null, session: null, isAdmin: false, isLoading: false })
+              }
+            }, 0)
+          })
+        }
+      } catch (err: any) {
+        set({
+          user: null,
+          session: null,
+          isAdmin: false,
+          isLoading: false,
+          error: err?.message || 'Authentication initialization error',
+        })
+      }
+    })()
+    return initPromise
   },
 
   login: async (email: string, password: string) => {
     set({ isLoading: true, error: null })
 
-    const cleanEmail = email.trim().toLowerCase()
-    const isOwnerEmail = cleanEmail === 'gopi@admin.com'
-    const isCorrectPassword = password === 'Gopi@9842'
-
-    // If Supabase is not configured yet, support documented local admin credentials
     if (!isSupabaseConfigured()) {
-      if (isOwnerEmail && isCorrectPassword) {
-        localStorage.setItem('gc_demo_admin_session', 'true')
-        localStorage.setItem('gc_admin_email', 'Gopi@admin.com')
-        set({
-          user: {
-            id: 'gopi-admin-id',
-            email: 'Gopi@admin.com',
-            app_metadata: {},
-            user_metadata: { name: 'Gopi' },
-            aud: 'authenticated',
-            created_at: new Date().toISOString(),
-          } as User,
-          session: null,
-          isAdmin: true,
-          isLoading: false,
-          error: null,
-        })
-        return { success: true, error: null }
-      } else {
-        const errorMsg = 'Invalid credentials. Please check your email and password.'
-        set({ isLoading: false, error: errorMsg })
-        return { success: false, error: errorMsg }
-      }
+      const errorMsg = 'Admin login is unavailable: the database is not configured.'
+      set({ isLoading: false, error: errorMsg })
+      return { success: false, error: errorMsg }
     }
 
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
-        email: cleanEmail,
+        email: email.trim().toLowerCase(),
         password,
       })
 
-      if (error) {
-        // Fallback for showroom owner credentials if remote auth user is not registered in Supabase auth yet
-        if (isOwnerEmail && isCorrectPassword) {
-          localStorage.setItem('gc_demo_admin_session', 'true')
-          localStorage.setItem('gc_admin_email', 'Gopi@admin.com')
-          set({
-            user: {
-              id: 'gopi-admin-id',
-              email: 'Gopi@admin.com',
-              app_metadata: {},
-              user_metadata: { name: 'Gopi' },
-              aud: 'authenticated',
-              created_at: new Date().toISOString(),
-            } as User,
-            session: null,
-            isAdmin: true,
-            isLoading: false,
-            error: null,
-          })
-          return { success: true, error: null }
-        }
-
-        set({ isLoading: false, error: error.message })
-        return { success: false, error: error.message }
-      }
-
-      if (!data.user) {
-        const errorMsg = 'No user returned from authentication service.'
+      if (error || !data.user) {
+        const errorMsg = 'Invalid email or password.'
         set({ isLoading: false, error: errorMsg })
         return { success: false, error: errorMsg }
       }
 
-      // Check admin status in admin_users table
-      const { data: adminRecord, error: adminCheckError } = await supabase
-        .from('admin_users')
-        .select('id, role')
-        .eq('id', data.user.id)
-        .single()
-
-      if (adminCheckError || !adminRecord) {
-        // User is authenticated in Supabase but not authorized in admin_users table
+      const isAdmin = await checkIsAdmin(data.user.id)
+      if (!isAdmin) {
         await supabase.auth.signOut()
-        const errorMsg = 'Access denied: Your account is not authorized as an administrator.'
+        const errorMsg = 'Access denied: this account is not an administrator.'
         set({ user: null, session: null, isAdmin: false, isLoading: false, error: errorMsg })
         return { success: false, error: errorMsg }
       }
 
-      set({
-        user: data.user,
-        session: data.session,
-        isAdmin: true,
-        isLoading: false,
-        error: null,
-      })
+      set({ user: data.user, session: data.session, isAdmin: true, isLoading: false, error: null })
       return { success: true, error: null }
     } catch (err: any) {
       const errorMsg = err?.message || 'Login failed unexpectedly.'
@@ -227,7 +140,6 @@ export const useAuthStore = create<AuthState>((set) => ({
         console.error('Logout error:', err)
       }
     }
-    localStorage.removeItem('gc_demo_admin_session')
     set({ user: null, session: null, isAdmin: false, isLoading: false, error: null })
   },
 

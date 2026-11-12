@@ -92,282 +92,314 @@ export const DEFAULT_HERO_SLIDES: HeroSlideConfig[] = [
   },
 ]
 
-const STORAGE_KEY = 'gc_hero_banners'
-const EVENT_NAME = 'gc_hero_banners_updated'
+// ------------------------------------------------------------------------------
+// Source of truth: the public.hero_banners table in Supabase.
+// localStorage is only a first-paint cache so the hero doesn't flash defaults
+// while the network request is in flight. Every device (phone, laptop) loads
+// the same slides from the database, so they always match.
+// ------------------------------------------------------------------------------
 
-// Initialize cached slides from localStorage or default slides
-function loadInitialSlides(): HeroSlideConfig[] {
-  if (typeof window === 'undefined') return DEFAULT_HERO_SLIDES
+const CACHE_KEY = 'gc_hero_banners_cache_v2'
+// Old key held admin-local edits that never reached other devices; drop it.
+const LEGACY_KEY = 'gc_hero_banners'
 
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY)
-    if (raw) {
-      const parsed = JSON.parse(raw)
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        return parsed.sort((a, b) => (a.orderIndex ?? 0) - (b.orderIndex ?? 0))
-      }
-    }
-  } catch (err) {
-    console.warn('[heroBannerService] Failed to parse localStorage banners:', err)
-  }
-
-  // Pre-seed defaults into localStorage for first run
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(DEFAULT_HERO_SLIDES))
-  } catch (err) {
-    // Ignore storage quota errors
-  }
-
-  return DEFAULT_HERO_SLIDES
+type HeroBannerRow = {
+  id: string
+  product_id: string | null
+  model_name: string
+  short_label: string
+  headline: string
+  description: string
+  specs: unknown
+  match_keywords?: unknown
+  image: string
+  image_alt: string
+  fallback_price: number | string
+  fallback_original_price: number | string
+  brand_tag: string
+  badge_text: string
+  kicker: string
+  primary_cta_text: string
+  secondary_cta_text: string
+  is_active: boolean
+  order_index: number
+  updated_at: string
 }
 
-let cachedSlides: HeroSlideConfig[] = loadInitialSlides()
-const listeners = new Set<(slides: HeroSlideConfig[]) => void>()
+const toStringArray = (v: unknown): string[] =>
+  Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string') : []
 
-function broadcast(slides: HeroSlideConfig[]) {
-  cachedSlides = [...slides].sort((a, b) => (a.orderIndex ?? 0) - (b.orderIndex ?? 0))
-  
-  if (typeof window !== 'undefined') {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(cachedSlides))
-      window.dispatchEvent(new CustomEvent(EVENT_NAME, { detail: cachedSlides }))
-    } catch (e) {
-      console.warn('[heroBannerService] Could not persist to localStorage:', e)
-    }
+function rowToSlide(r: HeroBannerRow): HeroSlideConfig {
+  return {
+    id: r.id,
+    productId: r.product_id ?? '',
+    matchKeywords: toStringArray(r.match_keywords),
+    brandTag: r.brand_tag ?? '',
+    badgeText: r.badge_text ?? '',
+    kicker: r.kicker ?? '',
+    modelName: r.model_name ?? '',
+    headline: r.headline ?? '',
+    shortLabel: r.short_label ?? '',
+    description: r.description ?? '',
+    specs: toStringArray(r.specs),
+    image: r.image ?? '',
+    imageAlt: r.image_alt ?? '',
+    fallbackPrice: Number(r.fallback_price) || 0,
+    fallbackOriginalPrice: Number(r.fallback_original_price) || 0,
+    primaryCtaText: r.primary_cta_text ?? '',
+    secondaryCtaText: r.secondary_cta_text ?? '',
+    isActive: r.is_active !== false,
+    orderIndex: r.order_index ?? 0,
+    updatedAt: r.updated_at,
   }
+}
 
+function slideToRow(s: HeroSlideConfig): HeroBannerRow {
+  return {
+    id: s.id,
+    product_id: s.productId || null,
+    model_name: s.modelName,
+    short_label: s.shortLabel,
+    headline: s.headline,
+    description: s.description,
+    specs: s.specs ?? [],
+    match_keywords: s.matchKeywords ?? [],
+    image: s.image,
+    image_alt: s.imageAlt,
+    fallback_price: s.fallbackPrice || 0,
+    fallback_original_price: s.fallbackOriginalPrice || 0,
+    brand_tag: s.brandTag,
+    badge_text: s.badgeText,
+    kicker: s.kicker,
+    primary_cta_text: s.primaryCtaText,
+    secondary_cta_text: s.secondaryCtaText,
+    is_active: s.isActive ?? true,
+    order_index: s.orderIndex ?? 0,
+    updated_at: new Date().toISOString(),
+  }
+}
+
+const sortSlides = (slides: HeroSlideConfig[]) =>
+  [...slides].sort((a, b) => (a.orderIndex ?? 0) - (b.orderIndex ?? 0))
+
+function readCache(): HeroSlideConfig[] | null {
+  if (typeof window === 'undefined') return null
+  try {
+    localStorage.removeItem(LEGACY_KEY)
+    const raw = localStorage.getItem(CACHE_KEY)
+    if (!raw) return null
+    const parsed = JSON.parse(raw)
+    return Array.isArray(parsed) && parsed.length > 0 ? sortSlides(parsed) : null
+  } catch {
+    return null
+  }
+}
+
+function writeCache(slides: HeroSlideConfig[]) {
+  if (typeof window === 'undefined') return
+  try {
+    localStorage.setItem(CACHE_KEY, JSON.stringify(slides))
+  } catch {
+    /* storage full or blocked */
+  }
+}
+
+let cachedSlides: HeroSlideConfig[] = readCache() ?? DEFAULT_HERO_SLIDES
+let isLoaded = !isSupabaseConfigured()
+let loadPromise: Promise<void> | null = null
+let syncError: string | null = null
+
+export type HeroBannerState = { slides: HeroSlideConfig[]; isLoaded: boolean; syncError: string | null }
+const listeners = new Set<(state: HeroBannerState) => void>()
+
+function emit() {
+  const state = { slides: cachedSlides, isLoaded, syncError }
   listeners.forEach((fn) => {
     try {
-      fn(cachedSlides)
+      fn(state)
     } catch (err) {
       console.error('[heroBannerService] Listener error:', err)
     }
   })
 }
 
-// Window cross-tab / cross-component synchronization
-if (typeof window !== 'undefined') {
-  window.addEventListener('storage', (e) => {
-    if (e.key === STORAGE_KEY && e.newValue) {
-      try {
-        const parsed = JSON.parse(e.newValue)
-        if (Array.isArray(parsed)) {
-          cachedSlides = parsed.sort((a, b) => (a.orderIndex ?? 0) - (b.orderIndex ?? 0))
-          listeners.forEach((fn) => fn(cachedSlides))
-        }
-      } catch (err) {
-        // Ignore JSON error
-      }
-    }
-  })
-
-  window.addEventListener(EVENT_NAME, (e: any) => {
-    if (e.detail && Array.isArray(e.detail)) {
-      cachedSlides = e.detail
-      listeners.forEach((fn) => fn(cachedSlides))
-    }
-  })
+function setLocal(slides: HeroSlideConfig[]) {
+  cachedSlides = sortSlides(slides)
+  writeCache(cachedSlides)
+  emit()
 }
 
-export const heroBannerService = {
-  /**
-   * Get all slides currently in cache.
-   * By default returns only active slides unless includeInactive is true.
-   */
-  getSlides: (includeInactive = false): HeroSlideConfig[] => {
-    if (includeInactive) {
-      return [...cachedSlides]
+function setSyncError(message: string | null) {
+  syncError = message
+  emit()
+}
+
+async function loadFromDatabase(): Promise<void> {
+  if (!isSupabaseConfigured()) return
+  const { data, error } = await (supabase as any)
+    .from('hero_banners')
+    .select('*')
+    .order('order_index', { ascending: true })
+
+  if (error) {
+    console.warn('[heroBannerService] Could not load hero banners:', error.message)
+    // Table missing or unreachable: every device shows the same built-in defaults.
+    cachedSlides = DEFAULT_HERO_SLIDES
+  } else {
+    const rows = (data ?? []) as HeroBannerRow[]
+    cachedSlides = rows.length > 0 ? sortSlides(rows.map(rowToSlide)) : DEFAULT_HERO_SLIDES
+    writeCache(cachedSlides)
+  }
+  isLoaded = true
+  emit()
+}
+
+function ensureLoaded() {
+  if (!loadPromise) {
+    loadPromise = loadFromDatabase().catch((err) => {
+      console.warn('[heroBannerService] load failed:', err)
+      isLoaded = true
+      emit()
+    })
+    if (isSupabaseConfigured()) {
+      try {
+        const channel = (supabase as any).channel('hero_banners_sync')
+        channel
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'hero_banners' }, () => {
+            loadFromDatabase()
+          })
+          .subscribe()
+      } catch {
+        /* realtime is optional */
+      }
     }
+  }
+  return loadPromise
+}
+
+async function upsertRemote(slides: HeroSlideConfig[]) {
+  if (!isSupabaseConfigured() || slides.length === 0) return
+  const { error } = await (supabase as any).from('hero_banners').upsert(slides.map(slideToRow))
+  if (error) throw new Error(error.message)
+}
+
+async function deleteRemote(ids: string[]) {
+  if (!isSupabaseConfigured() || ids.length === 0) return
+  const { error } = await (supabase as any).from('hero_banners').delete().in('id', ids)
+  if (error) throw new Error(error.message)
+}
+
+/**
+ * Apply a change locally right away, write it to the database, and on failure
+ * roll back and surface the error so the admin knows it did NOT go live.
+ */
+async function commit(next: HeroSlideConfig[], toUpsert: HeroSlideConfig[], toDelete: string[] = []): Promise<boolean> {
+  const previous = cachedSlides
+  setLocal(next)
+  setSyncError(null)
+  try {
+    await deleteRemote(toDelete)
+    await upsertRemote(toUpsert)
+    return true
+  } catch (err: any) {
+    setLocal(previous)
+    setSyncError(
+      `Not saved to the live site: ${err?.message || 'database error'}. ` +
+        'Check you are logged in as an admin and that migration 00008 has been run.'
+    )
+    return false
+  }
+}
+
+const reindex = (slides: HeroSlideConfig[]) => slides.map((s, idx) => ({ ...s, orderIndex: idx }))
+
+export const heroBannerService = {
+  getSlides: (includeInactive = false): HeroSlideConfig[] => {
+    if (includeInactive) return [...cachedSlides]
     const active = cachedSlides.filter((s) => s.isActive !== false)
     return active.length > 0 ? active : DEFAULT_HERO_SLIDES
   },
 
-  /**
-   * Get a single slide by id
-   */
-  getSlideById: (id: string): HeroSlideConfig | undefined => {
-    return cachedSlides.find((s) => s.id === id)
-  },
+  getSlideById: (id: string): HeroSlideConfig | undefined => cachedSlides.find((s) => s.id === id),
 
-  /**
-   * Save a new slide or replace an existing slide
-   */
-  saveSlide: (slide: HeroSlideConfig): HeroSlideConfig => {
+  saveSlide: (slide: HeroSlideConfig): Promise<boolean> => {
     const existingIndex = cachedSlides.findIndex((s) => s.id === slide.id)
-    const updatedSlide: HeroSlideConfig = {
+    const updated: HeroSlideConfig = {
       ...slide,
       updatedAt: new Date().toISOString(),
       orderIndex: slide.orderIndex ?? (existingIndex >= 0 ? existingIndex : cachedSlides.length),
       isActive: slide.isActive ?? true,
     }
-
-    let nextSlides: HeroSlideConfig[]
-    if (existingIndex >= 0) {
-      nextSlides = [...cachedSlides]
-      nextSlides[existingIndex] = updatedSlide
-    } else {
-      nextSlides = [...cachedSlides, updatedSlide]
-    }
-
-    broadcast(nextSlides)
-    heroBannerService.syncToSupabase(updatedSlide).catch(() => {})
-    return updatedSlide
+    const next = existingIndex >= 0
+      ? cachedSlides.map((s) => (s.id === slide.id ? updated : s))
+      : [...cachedSlides, updated]
+    // Write the full set: if the DB was empty the admin is looking at defaults,
+    // and the live site must match that preview exactly.
+    return commit(next, next)
   },
 
-  /**
-   * Update specific fields of a slide
-   */
-  updateSlide: (id: string, updates: Partial<HeroSlideConfig>): HeroSlideConfig | null => {
+  updateSlide: (id: string, updates: Partial<HeroSlideConfig>): Promise<boolean> => {
     const existing = cachedSlides.find((s) => s.id === id)
-    if (!existing) return null
-
-    const updated: HeroSlideConfig = {
-      ...existing,
-      ...updates,
-      updatedAt: new Date().toISOString(),
-    }
-
-    const nextSlides = cachedSlides.map((s) => (s.id === id ? updated : s))
-    broadcast(nextSlides)
-    heroBannerService.syncToSupabase(updated).catch(() => {})
-    return updated
+    if (!existing) return Promise.resolve(false)
+    const updated = { ...existing, ...updates, updatedAt: new Date().toISOString() }
+    const next = cachedSlides.map((s) => (s.id === id ? updated : s))
+    return commit(next, next)
   },
 
-  /**
-   * Toggle slide active state
-   */
-  toggleSlideActive: (id: string): boolean => {
+  toggleSlideActive: (id: string): Promise<boolean> => {
     const slide = cachedSlides.find((s) => s.id === id)
-    if (!slide) return false
-    const nextState = !slide.isActive
-    heroBannerService.updateSlide(id, { isActive: nextState })
-    return nextState
+    if (!slide) return Promise.resolve(false)
+    return heroBannerService.updateSlide(id, { isActive: slide.isActive === false })
   },
 
-  /**
-   * Delete a slide by id
-   */
-  deleteSlide: (id: string): boolean => {
-    const nextSlides = cachedSlides.filter((s) => s.id !== id)
-    if (nextSlides.length === cachedSlides.length) return false
-    
-    // Re-index remaining slides
-    const reindexed = nextSlides.map((s, idx) => ({ ...s, orderIndex: idx }))
-    broadcast(reindexed)
-    heroBannerService.deleteFromSupabase(id).catch(() => {})
-    return true
+  deleteSlide: (id: string): Promise<boolean> => {
+    if (!cachedSlides.some((s) => s.id === id)) return Promise.resolve(false)
+    const next = reindex(cachedSlides.filter((s) => s.id !== id))
+    return commit(next, next, [id])
   },
 
-  /**
-   * Reorder slides based on an ordered array of slide IDs
-   */
-  reorderSlides: (orderedIds: string[]): HeroSlideConfig[] => {
+  reorderSlides: (orderedIds: string[]): Promise<boolean> => {
     const map = new Map(cachedSlides.map((s) => [s.id, s]))
-    const reordered: HeroSlideConfig[] = []
-
-    orderedIds.forEach((id, index) => {
-      const slide = map.get(id)
-      if (slide) {
-        reordered.push({ ...slide, orderIndex: index })
+    const ordered: HeroSlideConfig[] = []
+    orderedIds.forEach((id) => {
+      const s = map.get(id)
+      if (s) {
+        ordered.push(s)
         map.delete(id)
       }
     })
-
-    // Append any slides that were not in orderedIds
-    map.forEach((slide) => {
-      reordered.push({ ...slide, orderIndex: reordered.length })
-    })
-
-    broadcast(reordered)
-    return reordered
+    map.forEach((s) => ordered.push(s))
+    const next = reindex(ordered)
+    return commit(next, next)
   },
 
-  /**
-   * Move a slide up or down by 1 position
-   */
-  moveSlide: (id: string, direction: 'up' | 'down'): boolean => {
+  moveSlide: (id: string, direction: 'up' | 'down'): Promise<boolean> => {
     const index = cachedSlides.findIndex((s) => s.id === id)
-    if (index === -1) return false
-    if (direction === 'up' && index === 0) return false
-    if (direction === 'down' && index === cachedSlides.length - 1) return false
-
-    const targetIndex = direction === 'up' ? index - 1 : index + 1
+    const target = direction === 'up' ? index - 1 : index + 1
+    if (index === -1 || target < 0 || target >= cachedSlides.length) return Promise.resolve(false)
     const next = [...cachedSlides]
-    const temp = next[index]
-    next[index] = next[targetIndex]
-    next[targetIndex] = temp
-
-    // Reassign orderIndex
-    const reindexed = next.map((s, idx) => ({ ...s, orderIndex: idx }))
-    broadcast(reindexed)
-    return true
+    const tmp = next[index]
+    next[index] = next[target]
+    next[target] = tmp
+    const reindexed = reindex(next)
+    return commit(reindexed, reindexed)
   },
 
-  /**
-   * Reset all slides back to showroom factory defaults
-   */
-  resetToDefaults: (): HeroSlideConfig[] => {
-    broadcast(DEFAULT_HERO_SLIDES)
-    return DEFAULT_HERO_SLIDES
+  resetToDefaults: (): Promise<boolean> => {
+    const defaultIds = new Set(DEFAULT_HERO_SLIDES.map((s) => s.id))
+    const toDelete = cachedSlides.filter((s) => !defaultIds.has(s.id)).map((s) => s.id)
+    return commit(DEFAULT_HERO_SLIDES, DEFAULT_HERO_SLIDES, toDelete)
   },
 
-  /**
-   * Subscribe to reactive updates
-   */
-  subscribe: (listener: (slides: HeroSlideConfig[]) => void): (() => void) => {
+  clearSyncError: () => setSyncError(null),
+
+  subscribe: (listener: (state: HeroBannerState) => void): (() => void) => {
     listeners.add(listener)
-    listener(cachedSlides)
+    listener({ slides: cachedSlides, isLoaded, syncError })
+    ensureLoaded()
     return () => {
       listeners.delete(listener)
     }
   },
-
-  /**
-   * Async helper: syncs to Supabase if hero_banners table exists
-   */
-  syncToSupabase: async (slide: HeroSlideConfig): Promise<void> => {
-    if (!isSupabaseConfigured()) return
-    try {
-      await (supabase as any)
-        .from('hero_banners')
-        .upsert({
-          id: slide.id,
-          product_id: slide.productId,
-          model_name: slide.modelName,
-          short_label: slide.shortLabel,
-          headline: slide.headline,
-          description: slide.description,
-          specs: slide.specs,
-          image: slide.image,
-          image_alt: slide.imageAlt,
-          fallback_price: slide.fallbackPrice,
-          fallback_original_price: slide.fallbackOriginalPrice,
-          brand_tag: slide.brandTag,
-          badge_text: slide.badgeText,
-          kicker: slide.kicker,
-          primary_cta_text: slide.primaryCtaText,
-          secondary_cta_text: slide.secondaryCtaText,
-          is_active: slide.isActive ?? true,
-          order_index: slide.orderIndex ?? 0,
-          updated_at: new Date().toISOString(),
-        })
-    } catch {
-      // Table may not exist yet, safe ignore
-    }
-  },
-
-  /**
-   * Async helper: deletes from Supabase if table exists
-   */
-  deleteFromSupabase: async (id: string): Promise<void> => {
-    if (!isSupabaseConfigured()) return
-    try {
-      await (supabase as any)
-        .from('hero_banners')
-        .delete()
-        .eq('id', id)
-    } catch {
-      // Safe ignore
-    }
-  },
 }
+

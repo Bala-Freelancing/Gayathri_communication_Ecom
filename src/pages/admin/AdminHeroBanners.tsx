@@ -67,7 +67,8 @@ export const AdminHeroBanners: React.FC = () => {
     toggleSlideActive, 
     deleteSlide, 
     moveSlide, 
-    resetToDefaults 
+    resetToDefaults,
+    syncError,
   } = useHeroBanners(true)
 
   const [activePreviewIndex, setActivePreviewIndex] = useState(0)
@@ -79,6 +80,11 @@ export const AdminHeroBanners: React.FC = () => {
   const [stockCategoryFilter, setStockCategoryFilter] = useState('all')
   const [newSpecTag, setNewSpecTag] = useState('')
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
+
+  // Surface database write failures: the change did NOT reach the live site.
+  useEffect(() => {
+    if (syncError) setFeedback({ type: 'error', message: syncError })
+  }, [syncError])
   const [catalogProducts, setCatalogProducts] = useState<any[]>([])
   const [showResetConfirm, setShowResetConfirm] = useState(false)
 
@@ -211,9 +217,9 @@ export const AdminHeroBanners: React.FC = () => {
   }
 
   // 1-Click Feature: Adds stock item directly to hero carousel
-  const handleFeatureStockItem = (product: any) => {
+  const handleFeatureStockItem = async (product: any) => {
     const newSlide = createSlideFromProduct(product, slides.length)
-    saveSlide(newSlide)
+    if (!(await saveSlide(newSlide))) return
     setActivePreviewIndex(slides.length)
     setShowStockPicker(false)
     setFeedback({
@@ -312,7 +318,7 @@ export const AdminHeroBanners: React.FC = () => {
   }
 
   // Save the form
-  const handleSaveForm = (e: React.FormEvent) => {
+  const handleSaveForm = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!form.modelName.trim()) {
       setFeedback({ type: 'error', message: 'Model Name / Display Title is required.' })
@@ -327,7 +333,7 @@ export const AdminHeroBanners: React.FC = () => {
       orderIndex: isCreatingNew ? slides.length : (editingSlide?.orderIndex ?? 0),
     }
 
-    saveSlide(payload)
+    if (!(await saveSlide(payload))) return
     setEditingSlide(null)
     setFeedback({
       type: 'success',
@@ -336,7 +342,7 @@ export const AdminHeroBanners: React.FC = () => {
     setTimeout(() => setFeedback(null), 4000)
   }
 
-  const handleDelete = (id: string, name: string) => {
+  const handleDelete = async (id: string, name: string) => {
     if (slides.length <= 1) {
       setFeedback({
         type: 'error',
@@ -346,7 +352,7 @@ export const AdminHeroBanners: React.FC = () => {
       return
     }
     if (confirm(`Are you sure you want to delete "${name}" from the hero banner?`)) {
-      deleteSlide(id)
+      if (!(await deleteSlide(id))) return
       setFeedback({
         type: 'success',
         message: `Slide "${name}" removed.`,
@@ -355,8 +361,8 @@ export const AdminHeroBanners: React.FC = () => {
     }
   }
 
-  const handleResetToDefaults = () => {
-    resetToDefaults()
+  const handleResetToDefaults = async () => {
+    if (!(await resetToDefaults())) return
     setShowResetConfirm(false)
     setActivePreviewIndex(0)
     setFeedback({

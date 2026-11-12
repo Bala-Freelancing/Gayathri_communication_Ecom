@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import { persist, createJSONStorage } from 'zustand/middleware'
 import { CartItem, Product, ProductCategory } from '@/types/product'
 import { storeDetails } from '@/data/mockProducts'
 
@@ -44,7 +45,9 @@ interface CartStore {
   generateProductInquiryUrl: (product: Product, selectedVariant?: string, variantPrice?: number) => string
 }
 
-export const useCartStore = create<CartStore>((set, get) => ({
+// Cart and wishlist survive page refreshes (they used to vanish on reload).
+// Prices are re-synced from the live catalogue via syncProductPrices.
+export const useCartStore = create<CartStore>()(persist((set, get) => ({
   cart: [],
   isCartOpen: false,
   setIsCartOpen: (open) => set({ isCartOpen: open }),
@@ -78,11 +81,16 @@ export const useCartStore = create<CartStore>((set, get) => ({
       )
 
       if (existingIndex > -1) {
-        const updated = [...state.cart]
-        const newQty = Math.min(updated[existingIndex].quantity + quantity, effectiveStock)
-        updated[existingIndex].quantity = newQty
-        updated[existingIndex].selectedVariantPrice = effectivePrice
-        updated[existingIndex].selectedVariantOriginalPrice = effectiveOriginalPrice
+        const updated = state.cart.map((item, idx) =>
+          idx === existingIndex
+            ? {
+                ...item,
+                quantity: Math.min(item.quantity + quantity, effectiveStock),
+                selectedVariantPrice: effectivePrice,
+                selectedVariantOriginalPrice: effectiveOriginalPrice,
+              }
+            : item
+        )
         return { cart: updated, isCartOpen: true }
       }
 
@@ -220,4 +228,16 @@ export const useCartStore = create<CartStore>((set, get) => ({
     const message = `👋 Hi Gayathri Communication, I am interested in:\n\n*${product.name}*${variantText}\nPrice: ₹${price.toLocaleString('en-IN')}${origPrice > price ? ` (MRP: ₹${origPrice.toLocaleString('en-IN')})` : ''}\n\n${stockQuery}`
     return `https://wa.me/${targetPhone}?text=${encodeURIComponent(message)}`
   },
+}), {
+  name: 'gc_cart_v1',
+  version: 1,
+  storage: createJSONStorage(() => {
+    try {
+      return localStorage
+    } catch {
+      // Private mode / blocked storage: fall back to an in-memory no-op store.
+      return { getItem: () => null, setItem: () => {}, removeItem: () => {} }
+    }
+  }),
+  partialize: (state) => ({ cart: state.cart, wishlist: state.wishlist }),
 }))

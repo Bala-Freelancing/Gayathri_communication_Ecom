@@ -197,7 +197,14 @@ export const CartDrawer: React.FC = () => {
       }
 
       const url = generateWhatsAppOrderUrl()
-      window.open(url, '_blank')
+      // Mobile browsers (esp. iOS Safari) block window.open after an await,
+      // which made checkout silently do nothing. Fall back to same-tab navigation.
+      const opened = window.open(url, '_blank')
+      if (opened) {
+        opened.opener = null
+      } else {
+        window.location.href = url
+      }
     } catch (err: any) {
       setStockValidationError(`Could not complete stock validation: ${err?.message || 'Network error'}`)
     } finally {
