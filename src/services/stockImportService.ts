@@ -902,14 +902,20 @@ export async function executeCatalogueReplacement(
 
   // Step 1: Execute standalone committed backup first if authorized
   const backupRes = await createDurableCatalogueBackup(backupLabel, 'catalogue_replacement')
+  if (isSupabaseConfigured() && !(backupRes.success && backupRes.backupId)) {
+    // Never replace the live catalogue without a committed backup to restore from.
+    return {
+      success: false,
+      importedCount: 0,
+      error: `Backup failed, so the live catalogue was left untouched. ${backupRes.error || 'Check you are logged in as an admin.'}`,
+    }
+  }
   const committedBackupId = backupRes.success && backupRes.backupId ? backupRes.backupId : `backup-${Date.now()}`
   const dbProducts = mapItemsToDatabaseProducts(validatedItems)
 
   if (isSupabaseConfigured()) {
     try {
-      let useDirectElevation = !backupRes.success
-
-      if (!useDirectElevation) {
+      {
         // Step 2: Execute transactional stored procedure with pre-existing backup ID
         const { data, error } = await supabase.rpc('replace_product_catalogue', {
           p_products: dbProducts,
@@ -927,46 +933,14 @@ export async function executeCatalogueReplacement(
           }
         }
 
-        // If error was permission related, fall through to direct elevation
-        if (error.message?.includes('Access Denied') || error.message?.includes('permission')) {
-          useDirectElevation = true
-        } else {
-          return {
-            success: false,
-            importedCount: 0,
-            backupId: committedBackupId,
-            error: `Transactional replacement failed: ${error.message}. Live catalogue preserved untouched. Pre-replacement backup ID: ${committedBackupId}.`,
-          }
-        }
-      }
-
-      if (useDirectElevation) {
-        // Fallback to SECURITY DEFINER admin procedures from migration 00007
-        await supabase.rpc('clear_all_products')
-        let importedCount = 0
-        for (const prod of dbProducts) {
-          const res = await supabase.rpc('admin_create_product', { p_product: prod })
-          if (!res.error) {
-            importedCount++
-          } else {
-            console.warn(`Error inserting ${prod.name}:`, res.error.message)
-          }
-        }
-        await productService.fetchProducts()
         return {
-          success: true,
-          importedCount,
+          success: false,
+          importedCount: 0,
           backupId: committedBackupId,
-          details: { method: 'admin_security_definer_elevation' },
+          error: `Transactional replacement failed: ${error.message}. Live catalogue preserved untouched. Pre-replacement backup ID: ${committedBackupId}.`,
         }
       }
 
-      return {
-        success: false,
-        importedCount: 0,
-        backupId: committedBackupId,
-        error: 'Replacement could not determine appropriate execution path.',
-      }
     } catch (err: any) {
       return {
         success: false,

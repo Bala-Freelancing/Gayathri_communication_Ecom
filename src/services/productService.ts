@@ -38,8 +38,19 @@ export interface PriceHistoryRecord {
 const PRODUCTS_STORAGE_KEY = 'gc_cached_products'
 const STOCK_OVERRIDES_KEY = 'gc_stock_overrides'
 
+// Local stock overrides are ONLY for offline demo mode. With a live database,
+// stock must come from the database so every customer sees the same status;
+// previously admin stock toggles lived only in the admin's own browser.
+if (typeof window !== 'undefined' && isSupabaseConfigured()) {
+  try {
+    localStorage.removeItem('gc_stock_overrides')
+  } catch {
+    /* storage unavailable */
+  }
+}
+
 export function getStockOverrides(): Record<string, { inStock: boolean; stockQuantity: number }> {
-  if (typeof window === 'undefined') return {}
+  if (typeof window === 'undefined' || isSupabaseConfigured()) return {}
   try {
     const raw = localStorage.getItem(STOCK_OVERRIDES_KEY)
     return raw ? JSON.parse(raw) : {}
@@ -49,7 +60,7 @@ export function getStockOverrides(): Record<string, { inStock: boolean; stockQua
 }
 
 export function saveStockOverride(productId: string, inStock: boolean, stockQuantity: number) {
-  if (typeof window === 'undefined') return
+  if (typeof window === 'undefined' || isSupabaseConfigured()) return
   try {
     const current = getStockOverrides()
     current[productId] = { inStock, stockQuantity }
@@ -978,12 +989,10 @@ export const productService = {
         const { error: rpcError } = await supabase.rpc('admin_delete_product', { p_product_id: productId })
         if (rpcError) {
           const { error } = await supabase.from('products').delete().eq('id', productId)
-          if (error) {
-            console.warn('Direct delete warning:', error.message)
-          }
+          if (error) return { success: false, error: `Delete failed: ${error.message}` }
         }
       } catch (err: any) {
-        console.warn('Database delete warning:', err?.message)
+        return { success: false, error: err?.message || 'Delete failed' }
       }
     }
 
@@ -1000,14 +1009,9 @@ export const productService = {
     if (isSupabaseConfigured()) {
       try {
         const { error: rpcError } = await supabase.rpc('clear_all_products')
-        if (rpcError) {
-          const { error } = await supabase.from('products').delete().neq('id', '')
-          if (error) {
-            console.warn('Direct clear warning:', error.message)
-          }
-        }
+        if (rpcError) return { success: false, error: `Clear failed: ${rpcError.message}` }
       } catch (err: any) {
-        console.warn('Database clear warning:', err?.message)
+        return { success: false, error: err?.message || 'Clear failed' }
       }
     }
 
@@ -1065,43 +1069,35 @@ export const productService = {
     persistProductsToStorage(cachedProducts)
     productService.notifyListeners()
 
-    // 3. Persist to Supabase database if configured
+    // 3. Persist to the database (admin RLS policy on products). Report failure
+    //    honestly and re-sync so the admin never sees a change that isn't live.
     if (isSupabaseConfigured()) {
       try {
-        const { data: row } = await supabase.from('products').select('*').eq('id', productId).single()
-        if (row) {
-          const updatedVariants = Array.isArray(row.variants)
-            ? row.variants.map((v: any) => ({
-                ...v,
-                inStock: inStock ? (v.inStock !== false && (v.stockQuantity === undefined || v.stockQuantity > 0)) : false,
-                stockQuantity: inStock ? (v.stockQuantity > 0 ? v.stockQuantity : effectiveQty) : 0,
-              }))
-            : row.variants
-
-          const payload: any = {
-            ...row,
+        const { data: row, error: readError } = await supabase.from('products').select('variants').eq('id', productId).single()
+        if (readError) throw new Error(readError.message)
+        const updatedVariants = Array.isArray(row?.variants)
+          ? (row!.variants as any[]).map((v: any) => ({
+              ...v,
+              inStock: inStock ? (v.inStock !== false && (v.stockQuantity === undefined || v.stockQuantity > 0)) : false,
+              stockQuantity: inStock ? (v.stockQuantity > 0 ? v.stockQuantity : effectiveQty) : 0,
+            }))
+          : row?.variants
+        const { data: updated, error } = await supabase
+          .from('products')
+          .update({
             in_stock: inStock,
             stock_quantity: effectiveQty,
-            variants: updatedVariants,
+            variants: updatedVariants as any,
             updated_at: new Date().toISOString(),
-          }
-
-          // Use the admin_create_product RPC (runs with SECURITY DEFINER and bypasses anon RLS restrictions)
-          const rpcRes = await supabase.rpc('admin_create_product', { p_product: payload })
-          if (rpcRes.error) {
-            console.warn('[productService] admin_create_product RPC fallback:', rpcRes.error.message)
-            await supabase.from('products').update({
-              in_stock: inStock,
-              stock_quantity: effectiveQty,
-              variants: updatedVariants,
-              updated_at: new Date().toISOString(),
-            }).eq('id', productId)
-          }
-        }
+          })
+          .eq('id', productId)
+          .select('id')
+        if (error) throw new Error(error.message)
+        if (!updated || updated.length === 0) throw new Error('Not permitted (are you logged in as an admin?)')
       } catch (err: any) {
-        console.warn('[productService] Remote stock sync warning:', err)
+        await productService.fetchProducts()
+        return { success: false, error: `Stock not saved to the live site: ${err?.message || 'database error'}` }
       }
-      // Re-fetch to ensure remote consistency
       await productService.fetchProducts()
     }
 
@@ -1445,11 +1441,11 @@ export const productService = {
             p_product: rowPayload,
           })
           if (rpcError) {
-            console.warn('Supabase product creation warning:', error.message, rpcError.message)
+            return { success: false, error: `Product not saved to the live site: ${rpcError.message}` }
           }
         }
       } catch (err: any) {
-        console.warn('Failed to save product to remote database, saving to local cache:', err?.message)
+        return { success: false, error: `Product not saved to the live site: ${err?.message || 'database error'}` }
       }
     }
 

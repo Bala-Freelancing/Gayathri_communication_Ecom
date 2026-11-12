@@ -2,28 +2,30 @@ import { useState, useEffect } from 'react'
 import { HeroSlideConfig } from '@/types/heroBanner'
 import { heroBannerService, DEFAULT_HERO_SLIDES } from '@/services/heroBannerService'
 
+function pick(all: HeroSlideConfig[], includeInactive: boolean) {
+  if (includeInactive) return all
+  const active = all.filter((s) => s.isActive !== false)
+  return active.length > 0 ? active : DEFAULT_HERO_SLIDES
+}
+
 export function useHeroBanners(includeInactive = false) {
-  const [slides, setSlides] = useState<HeroSlideConfig[]>(() => 
-    heroBannerService.getSlides(includeInactive)
-  )
+  const [slides, setSlides] = useState<HeroSlideConfig[]>(() => heroBannerService.getSlides(includeInactive))
+  const [isLoaded, setIsLoaded] = useState(false)
+  const [syncError, setSyncError] = useState<string | null>(null)
 
   useEffect(() => {
-    const unsubscribe = heroBannerService.subscribe((allSlides) => {
-      if (includeInactive) {
-        setSlides(allSlides)
-      } else {
-        const active = allSlides.filter((s) => s.isActive !== false)
-        setSlides(active.length > 0 ? active : DEFAULT_HERO_SLIDES)
-      }
+    return heroBannerService.subscribe((state) => {
+      setSlides(pick(state.slides, includeInactive))
+      setIsLoaded(state.isLoaded)
+      setSyncError(state.syncError)
     })
-
-    return () => {
-      unsubscribe()
-    }
   }, [includeInactive])
 
   return {
     slides,
+    isLoaded,
+    syncError,
+    clearSyncError: heroBannerService.clearSyncError,
     saveSlide: heroBannerService.saveSlide,
     updateSlide: heroBannerService.updateSlide,
     toggleSlideActive: heroBannerService.toggleSlideActive,
