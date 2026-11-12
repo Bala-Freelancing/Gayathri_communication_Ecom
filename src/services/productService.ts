@@ -1097,11 +1097,15 @@ export const productService = {
               stockQuantity: inStock ? (v.stockQuantity > 0 ? v.stockQuantity : effectiveQty) : 0,
             }))
           : row?.variants
+        // With variants, the product total is the sum of its variants.
+        const totalQty = Array.isArray(updatedVariants) && updatedVariants.length > 0
+          ? (updatedVariants as any[]).reduce((sum, v) => sum + (Number(v.stockQuantity) || 0), 0)
+          : effectiveQty
         const { data: updated, error } = await supabase
           .from('products')
           .update({
             in_stock: inStock,
-            stock_quantity: effectiveQty,
+            stock_quantity: totalQty,
             variants: updatedVariants as any,
             updated_at: new Date().toISOString(),
           })

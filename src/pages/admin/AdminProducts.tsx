@@ -156,11 +156,62 @@ const PriceCell: React.FC<{ product: AdminRow; onSaved: (price: number, mrp: num
 // ------------------------------------------------------------------------------
 // Inline stock editor
 // ------------------------------------------------------------------------------
-const StockCell: React.FC<{ product: AdminRow; onSaved: (qty: number) => void; onError: (m: string) => void }> = ({
+// In stock / Out of stock switch (works for products with and without variants)
+const StockSwitch: React.FC<{ product: AdminRow; onChanged: (inStock: boolean, qty: number) => void; onError: (m: string) => void }> = ({
   product,
-  onSaved,
+  onChanged,
   onError,
 }) => {
+  const [saving, setSaving] = useState(false)
+  const inStock = !isOut(product)
+
+  const toggle = async () => {
+    const next = !inStock
+    // Turning back on restores the last known quantity, or 10 if there was none.
+    const qty = next ? (product.stockQuantity > 0 ? product.stockQuantity : 10) : 0
+    setSaving(true)
+    const res = await productService.toggleProductStock(product.id, next, qty)
+    setSaving(false)
+    if (!res.success) return onError(res.error || 'Stock status not saved.')
+    onChanged(next, qty)
+  }
+
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={inStock}
+      onClick={toggle}
+      disabled={saving}
+      title={inStock ? 'Tap to mark out of stock' : 'Tap to mark in stock'}
+      aria-label={`${product.name}: ${inStock ? 'in stock' : 'out of stock'}. Tap to change.`}
+      className={`inline-flex h-8 w-fit items-center gap-2 rounded-full pl-1 pr-3 text-xs font-semibold transition-colors cursor-pointer disabled:opacity-60 ${
+        inStock ? 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200 hover:bg-emerald-100' : 'bg-rose-50 text-rose-700 ring-1 ring-rose-200 hover:bg-rose-100'
+      }`}
+    >
+      <span className={`relative h-6 w-10 shrink-0 rounded-full transition-colors ${inStock ? 'bg-emerald-500' : 'bg-slate-300'}`}>
+        <span
+          className={`absolute top-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-white shadow transition-transform ${
+            inStock ? 'translate-x-[18px]' : 'translate-x-0.5'
+          }`}
+        >
+          {saving && <Loader2 className="h-3 w-3 animate-spin text-slate-500" />}
+        </span>
+      </span>
+      {inStock ? 'In stock' : 'Out of stock'}
+    </button>
+  )
+}
+
+// ------------------------------------------------------------------------------
+// Inline stock editor
+// ------------------------------------------------------------------------------
+const StockCell: React.FC<{
+  product: AdminRow
+  onSaved: (qty: number) => void
+  onVariantsChanged: () => void
+  onError: (m: string) => void
+}> = ({ product, onSaved, onVariantsChanged, onError }) => {
   const [qty, setQty] = useState(product.stockQuantity)
   const [saving, setSaving] = useState(false)
   const dirty = qty !== product.stockQuantity
@@ -169,9 +220,11 @@ const StockCell: React.FC<{ product: AdminRow; onSaved: (qty: number) => void; o
 
   if (hasVariants(product)) {
     return (
-      <div>
-        <StockBadge product={product} />
-        <p className="mt-1 text-xs text-slate-400">Edit to change per variant</p>
+      <div className="flex flex-col gap-1.5">
+        <StockSwitch product={product} onChanged={() => onVariantsChanged()} onError={onError} />
+        <p className="text-xs text-slate-400">
+          {isOut(product) ? 'All variants off' : `${product.stockQuantity} units across ${product.variants!.length} variants`} · edit to change per variant
+        </p>
       </div>
     )
   }
@@ -189,6 +242,7 @@ const StockCell: React.FC<{ product: AdminRow; onSaved: (qty: number) => void; o
 
   return (
     <div className="flex flex-col gap-1.5">
+      <StockSwitch product={product} onChanged={(_, q) => onSaved(q)} onError={onError} />
       <div className="flex items-center gap-1">
         <button
           type="button"
@@ -206,7 +260,7 @@ const StockCell: React.FC<{ product: AdminRow; onSaved: (qty: number) => void; o
           onChange={(e) => setQty(Math.max(0, parseInt(e.target.value, 10) || 0))}
           onKeyDown={(e) => e.key === 'Enter' && dirty && save(qty)}
           className="h-8 w-14 rounded-md border border-slate-300 text-center text-sm tabular-nums"
-          aria-label={`Stock for ${product.name}`}
+          aria-label={`Stock quantity for ${product.name}`}
         />
         <button
           type="button"
@@ -216,8 +270,9 @@ const StockCell: React.FC<{ product: AdminRow; onSaved: (qty: number) => void; o
         >
           <Plus className="h-3.5 w-3.5" />
         </button>
+        <span className="ml-1 text-xs text-slate-400">units</span>
       </div>
-      {dirty ? (
+      {dirty && (
         <div className="flex gap-1.5">
           <button
             type="button"
@@ -235,30 +290,10 @@ const StockCell: React.FC<{ product: AdminRow; onSaved: (qty: number) => void; o
             Cancel
           </button>
         </div>
-      ) : isOut(product) ? (
-        <span className="text-xs font-medium text-rose-600">Out of stock</span>
-      ) : (
-        <button
-          type="button"
-          onClick={() => save(0)}
-          disabled={saving}
-          className="w-fit text-xs text-slate-500 underline-offset-2 hover:text-rose-600 hover:underline cursor-pointer"
-        >
-          {saving ? 'Saving…' : 'Mark out of stock'}
-        </button>
       )}
     </div>
   )
 }
-
-const StockBadge: React.FC<{ product: AdminRow }> = ({ product }) =>
-  isOut(product) ? (
-    <span className="rounded-full bg-rose-50 px-2 py-0.5 text-xs font-medium text-rose-700">Out of stock</span>
-  ) : product.stockQuantity <= LOW_STOCK ? (
-    <span className="rounded-full bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700">{product.stockQuantity} left</span>
-  ) : (
-    <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700">{product.stockQuantity} in stock</span>
-  )
 
 // ------------------------------------------------------------------------------
 // Edit product modal
@@ -744,6 +779,10 @@ export const AdminProducts: React.FC = () => {
                     <td className="px-4 py-3">
                       <StockCell
                         product={p}
+                        onVariantsChanged={() => {
+                          notify(isOut(p) ? `"${p.name}" marked in stock` : `"${p.name}" marked out of stock`)
+                          reload()
+                        }}
                         onSaved={(qty) => {
                           patchRow(p.id, { stockQuantity: qty, inStock: qty > 0 })
                           notify(qty > 0 ? `Stock for "${p.name}" set to ${qty}` : `"${p.name}" marked out of stock`)
@@ -774,6 +813,10 @@ export const AdminProducts: React.FC = () => {
                   />
                   <StockCell
                     product={p}
+                    onVariantsChanged={() => {
+                      notify(isOut(p) ? `"${p.name}" marked in stock` : `"${p.name}" marked out of stock`)
+                      reload()
+                    }}
                     onSaved={(qty) => {
                       patchRow(p.id, { stockQuantity: qty, inStock: qty > 0 })
                       notify(qty > 0 ? `Stock for "${p.name}" set to ${qty}` : `"${p.name}" marked out of stock`)
