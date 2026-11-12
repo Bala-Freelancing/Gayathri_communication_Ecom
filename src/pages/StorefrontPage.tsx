@@ -13,6 +13,7 @@ import { CartDrawer } from '@/components/cart/CartDrawer'
 import { AboutModal } from '@/components/modals/AboutModal'
 import { StoresModal } from '@/components/modals/StoresModal'
 import { ContactModal } from '@/components/modals/ContactModal'
+import { CibilFloatingButton } from '@/components/layout/CibilFloatingButton'
 
 export const StorefrontPage: React.FC = () => {
   const [isAboutOpen, setIsAboutOpen] = useState(false)
@@ -63,6 +64,9 @@ export const StorefrontPage: React.FC = () => {
       <AboutModal isOpen={isAboutOpen} onClose={() => setIsAboutOpen(false)} />
       <StoresModal isOpen={isStoresOpen} onClose={() => setIsStoresOpen(false)} />
       <ContactModal isOpen={isContactOpen} onClose={() => setIsContactOpen(false)} />
+
+      {/* Floating Bajaj Finserv CIBIL / EMI eligibility shortcut */}
+      <CibilFloatingButton />
     </div>
   )
 }
