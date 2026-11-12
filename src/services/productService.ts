@@ -809,7 +809,24 @@ export const productService = {
         })
 
         if (error) {
-          return { success: false, error: error.message }
+          // The audit-trail function may not exist on older databases; fall back
+          // to a direct admin update (protected by the products RLS policy).
+          const missingFn = error.code === 'PGRST202' || /does not exist|Could not find the function/i.test(error.message)
+          if (!missingFn || variantId) return { success: false, error: error.message }
+          const { data: updatedRows, error: updErr } = await supabase
+            .from('products')
+            .update({
+              original_price: newOriginalPrice,
+              selling_price: newSellingPrice,
+              emi_starts_at: Math.round(newSellingPrice / 24),
+              updated_at: new Date().toISOString(),
+            })
+            .eq('id', productId)
+            .select('id')
+          if (updErr) return { success: false, error: updErr.message }
+          if (!updatedRows || updatedRows.length === 0) {
+            return { success: false, error: 'Not saved: permission denied (are you logged in as admin?)' }
+          }
         }
 
         // Fetch fresh copy from Supabase to guarantee client consistency
@@ -960,12 +977,16 @@ export const productService = {
   toggleProductActive: async (productId: string, isActive: boolean): Promise<{ success: boolean; error: string | null }> => {
     if (isSupabaseConfigured()) {
       try {
-        const { error } = await supabase
+        const { data: updatedRows, error } = await supabase
           .from('products')
           .update({ is_active: isActive, updated_at: new Date().toISOString() })
           .eq('id', productId)
+          .select('id')
 
         if (error) return { success: false, error: error.message }
+        if (!updatedRows || updatedRows.length === 0) {
+          return { success: false, error: 'Not saved: permission denied (are you logged in as admin?)' }
+        }
         await productService.fetchProducts()
         return { success: true, error: null }
       } catch (err: any) {
@@ -1151,14 +1172,15 @@ export const productService = {
           }
         }
 
-        const { error } = await supabase
+        const { data: updatedRows, error } = await supabase
           .from('products')
           .update(payload)
           .eq('id', productId)
+          .select('id')
 
-        if (error) {
-          // Fallback to admin RPC if direct update had RLS issues
-          console.warn('Direct update error, trying fetch refresh:', error.message)
+        if (error) return { success: false, error: `Not saved: ${error.message}` }
+        if (!updatedRows || updatedRows.length === 0) {
+          return { success: false, error: 'Not saved: permission denied (are you logged in as admin?)' }
         }
         await productService.fetchProducts()
         return { success: true, error: null }

@@ -422,23 +422,23 @@ export const AddStockModal: React.FC<AddStockModalProps> = ({ isOpen, onClose, o
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-md overflow-y-auto">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-50 backdrop-blur-md overflow-y-auto">
       <div 
-        className="relative w-full max-w-4xl bg-slate-950 border border-slate-800 rounded-2xl shadow-2xl flex flex-col my-auto max-h-[92vh] overflow-hidden"
+        className="relative w-full max-w-4xl bg-white border border-slate-200 rounded-2xl shadow-sm flex flex-col my-auto max-h-[92vh] overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="p-5 border-b border-slate-800/80 bg-slate-900/60 flex items-center justify-between sticky top-0 z-10 backdrop-blur-lg">
+        <div className="p-5 border-b border-slate-200/80 bg-slate-50 flex items-center justify-between sticky top-0 z-10 backdrop-blur-lg">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-500 to-blue-600 flex items-center justify-center text-white shadow-lg shadow-cyan-500/20">
+            <div className="w-10 h-10 rounded-xl bg-slate-900 flex items-center justify-center text-white">
               <Sparkles className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h2 className="text-lg font-bold text-white tracking-tight font-['Outfit']">
-                Add New Showroom Stock
+              <h2 className="text-lg font-bold text-slate-900 tracking-tight font-['Outfit']">
+                Add product
               </h2>
-              <p className="text-xs text-slate-400">
-                Lookup official catalog specifications or enter model inventory manually.
+              <p className="text-xs text-slate-500">
+                Search the online catalogue to fill details, or type them in.
               </p>
             </div>
           </div>
@@ -447,7 +447,7 @@ export const AddStockModal: React.FC<AddStockModalProps> = ({ isOpen, onClose, o
               clearObjectUrl()
               onClose()
             }}
-            className="p-2 rounded-xl border border-slate-800 hover:border-slate-700 text-slate-400 hover:text-white transition-colors"
+            className="p-2 rounded-xl border border-slate-200 hover:border-slate-300 text-slate-500 hover:text-slate-900 transition-colors"
             aria-label="Close modal"
           >
             <X className="w-5 h-5" />
@@ -459,20 +459,20 @@ export const AddStockModal: React.FC<AddStockModalProps> = ({ isOpen, onClose, o
 
           {/* Duplicate Product Alert Warning Modal */}
           {duplicateWarning && (
-            <div className="p-4 rounded-xl border border-amber-600/50 bg-amber-950/40 text-amber-200 space-y-3">
+            <div className="p-4 rounded-xl border border-amber-600/50 bg-amber-50 text-amber-700 space-y-3">
               <div className="flex items-start gap-3">
-                <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
+                <AlertTriangle className="w-5 h-5 text-amber-700 shrink-0 mt-0.5" />
                 <div className="text-xs space-y-1">
-                  <span className="font-bold text-sm text-amber-300 block">
+                  <span className="font-bold text-sm text-amber-700 block">
                     Potential Duplicate Product Detected
                   </span>
                   <p>
                     A product with a similar name already exists in inventory:
                   </p>
-                  <p className="font-semibold text-white bg-slate-900/80 p-2 rounded-lg border border-slate-800">
+                  <p className="font-semibold text-slate-900 bg-slate-50 p-2 rounded-lg border border-slate-200">
                     "{duplicateWarning.name}" ({duplicateWarning.brand}) — Current Price: {formatINR(duplicateWarning.price)}
                   </p>
-                  <p className="text-amber-300/80">
+                  <p className="text-amber-700">
                     Do you want to proceed and add this as a separate stock item, or cancel to review?
                   </p>
                 </div>
@@ -483,7 +483,7 @@ export const AddStockModal: React.FC<AddStockModalProps> = ({ isOpen, onClose, o
                   variant="outline"
                   size="sm"
                   onClick={() => setDuplicateWarning(null)}
-                  className="border-slate-700 text-slate-300 hover:text-white text-xs"
+                  className="border-slate-300 text-slate-700 hover:text-slate-900 text-xs"
                 >
                   Cancel & Review
                 </Button>
@@ -504,22 +504,22 @@ export const AddStockModal: React.FC<AddStockModalProps> = ({ isOpen, onClose, o
 
           {/* Form Error Toast */}
           {formError && (
-            <div className="p-3.5 rounded-xl border border-rose-800 bg-rose-950/60 text-rose-200 text-xs flex items-center gap-2.5">
-              <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
+            <div className="p-3.5 rounded-xl border border-rose-200 bg-rose-50 text-rose-700 text-xs flex items-center gap-2.5">
+              <AlertCircle className="w-4 h-4 text-rose-700 shrink-0" />
               <span>{formError}</span>
             </div>
           )}
 
           {/* Step 1: Catalog Lookup Section */}
-          <div className="p-4 sm:p-5 rounded-xl border border-slate-800/80 bg-slate-900/30 space-y-4">
+          <div className="p-4 sm:p-5 rounded-xl border border-slate-200/80 bg-slate-50 space-y-4">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-bold uppercase tracking-wider text-cyan-400 flex items-center gap-1.5">
+              <span className="text-xs font-bold uppercase tracking-wider text-cyan-700 flex items-center gap-1.5">
                 <Search className="w-3.5 h-3.5" /> Step 1: Catalog Search & Autofill (Optional)
               </span>
               <button
                 type="button"
                 onClick={handleSkipToManual}
-                className="text-xs text-slate-400 hover:text-cyan-400 underline underline-offset-4"
+                className="text-xs text-slate-500 hover:text-cyan-700 underline underline-offset-4"
               >
                 Skip to Manual Form
               </button>
@@ -528,7 +528,7 @@ export const AddStockModal: React.FC<AddStockModalProps> = ({ isOpen, onClose, o
             <form onSubmit={handleLookup} className="space-y-3">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-[11px] font-semibold text-slate-300 mb-1">
+                  <label className="block text-[11px] font-semibold text-slate-700 mb-1">
                     Brand Name
                   </label>
                   <input
@@ -536,11 +536,11 @@ export const AddStockModal: React.FC<AddStockModalProps> = ({ isOpen, onClose, o
                     value={brandInput}
                     onChange={(e) => setBrandInput(e.target.value)}
                     placeholder="e.g. Samsung, LG, Logitech, Bosch"
-                    className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 placeholder-slate-500 focus:outline-none focus:border-cyan-500"
                   />
                 </div>
                 <div>
-                  <label className="block text-[11px] font-semibold text-slate-300 mb-1">
+                  <label className="block text-[11px] font-semibold text-slate-700 mb-1">
                     Model Name or SKU
                   </label>
                   <input
@@ -548,7 +548,7 @@ export const AddStockModal: React.FC<AddStockModalProps> = ({ isOpen, onClose, o
                     value={modelInput}
                     onChange={(e) => setModelInput(e.target.value)}
                     placeholder="e.g. Galaxy S24 Ultra, OLED C3, MX Master 3S"
-                    className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 placeholder-slate-500 focus:outline-none focus:border-cyan-500"
                   />
                 </div>
               </div>
@@ -563,8 +563,7 @@ export const AddStockModal: React.FC<AddStockModalProps> = ({ isOpen, onClose, o
                     onClick={() => setBrandInput(b)}
                     className={`text-[10px] px-2 py-0.5 rounded-lg border transition-all ${
                       brandInput.toLowerCase() === b.toLowerCase()
-                        ? 'bg-cyan-950 border-cyan-500 text-cyan-300 font-bold'
-                        : 'border-slate-800 text-slate-400 hover:border-slate-700 hover:text-slate-200'
+                        ? 'bg-cyan-50 border-cyan-500 text-cyan-700 font-bold' : 'border-slate-200 text-slate-500 hover:border-slate-300 hover:text-slate-800'
                     }`}
                   >
                     {b}
@@ -576,7 +575,7 @@ export const AddStockModal: React.FC<AddStockModalProps> = ({ isOpen, onClose, o
                 <Button
                   type="submit"
                   disabled={searching}
-                  className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-semibold text-xs px-5 py-2.5 rounded-xl flex items-center gap-2 shadow-lg shadow-cyan-500/10"
+                  className="bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs px-5 py-2.5 rounded-xl flex items-center gap-2 shadow-lg "
                 >
                   {searching ? (
                     <>
@@ -597,7 +596,7 @@ export const AddStockModal: React.FC<AddStockModalProps> = ({ isOpen, onClose, o
                       setBrandInput('')
                       setModelInput('')
                     }}
-                    className="text-xs text-slate-400 hover:text-slate-200 flex items-center gap-1"
+                    className="text-xs text-slate-500 hover:text-slate-800 flex items-center gap-1"
                   >
                     <RefreshCw className="w-3.5 h-3.5" /> Reset Search
                   </button>
@@ -607,29 +606,29 @@ export const AddStockModal: React.FC<AddStockModalProps> = ({ isOpen, onClose, o
 
             {/* Match Found Banner */}
             {lookupPerformed && lookupMatchFound && (
-              <div className="p-3.5 rounded-xl border border-emerald-800/80 bg-emerald-950/40 text-emerald-200 text-xs space-y-1">
-                <div className="flex items-center gap-2 font-bold text-emerald-400">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+              <div className="p-3.5 rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-700 text-xs space-y-1">
+                <div className="flex items-center gap-2 font-bold text-emerald-700">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-700" />
                   <span>
                     {lookupSource === 'live-open-icecat'
                       ? 'Live Match Retrieved from Open Icecat Catalog'
                       : 'Demo Catalog Fallback Match'}
                   </span>
                 </div>
-                <p className="text-[11px] text-emerald-300/80">
+                <p className="text-[11px] text-emerald-700">
                   {lookupSource === 'live-open-icecat'
                     ? 'Official live manufacturer specifications and studio preview loaded from Open Icecat. Please review details, enter showroom selling price, and confirm stock count.'
                     : 'Reference demonstration specifications loaded from local catalogue fallback. Please review details, enter showroom selling price, and confirm stock count.'}
                 </p>
                 {lookupAttribution && (
-                  <div className="pt-1 flex items-center gap-2 text-[10px] text-slate-400">
+                  <div className="pt-1 flex items-center gap-2 text-[10px] text-slate-500">
                     <span>{lookupAttribution}</span>
                     {lookupIcecatUrl && (
                       <a
                         href={lookupIcecatUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-cyan-400 hover:underline flex items-center gap-0.5"
+                        className="text-cyan-700 hover:underline flex items-center gap-0.5"
                       >
                         Specs Icecat <ExternalLink className="w-3 h-3" />
                       </a>
@@ -641,12 +640,12 @@ export const AddStockModal: React.FC<AddStockModalProps> = ({ isOpen, onClose, o
 
             {/* Unsupported / Not Found Banner */}
             {lookupPerformed && !lookupMatchFound && unsupportedBrandMessage && (
-              <div className="p-3.5 rounded-xl border border-slate-700 bg-slate-900/60 text-slate-300 text-xs space-y-1">
-                <div className="flex items-center gap-2 font-bold text-amber-400">
-                  <AlertCircle className="w-4 h-4 text-amber-400" />
+              <div className="p-3.5 rounded-xl border border-slate-300 bg-slate-50 text-slate-700 text-xs space-y-1">
+                <div className="flex items-center gap-2 font-bold text-amber-700">
+                  <AlertCircle className="w-4 h-4 text-amber-700" />
                   <span>Manual Entry Mode Active</span>
                 </div>
-                <p className="text-[11px] text-slate-400">
+                <p className="text-[11px] text-slate-500">
                   {unsupportedBrandMessage}
                 </p>
               </div>
@@ -655,20 +654,20 @@ export const AddStockModal: React.FC<AddStockModalProps> = ({ isOpen, onClose, o
 
           {/* Step 2: Product Information & Inventory Form */}
           <div className="space-y-4">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-400 block">
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-500 block">
               Step 2: Product Review, Specifications & Pricing
             </span>
 
             {/* Core Classification: Category & Brand */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
-                <label className="block text-[11px] font-semibold text-slate-300 mb-1">
+                <label className="block text-[11px] font-semibold text-slate-700 mb-1">
                   Category <span className="text-rose-500">*</span>
                 </label>
                 <select
                   value={category}
                   onChange={(e) => setCategory(e.target.value as ProductCategoryType)}
-                  className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-cyan-500"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-cyan-500"
                 >
                   {CATEGORIES.map((c) => (
                     <option key={c.id} value={c.id}>
@@ -679,7 +678,7 @@ export const AddStockModal: React.FC<AddStockModalProps> = ({ isOpen, onClose, o
               </div>
 
               <div>
-                <label className="block text-[11px] font-semibold text-slate-300 mb-1">
+                <label className="block text-[11px] font-semibold text-slate-700 mb-1">
                   Brand <span className="text-rose-500">*</span>
                 </label>
                 <input
@@ -687,12 +686,12 @@ export const AddStockModal: React.FC<AddStockModalProps> = ({ isOpen, onClose, o
                   value={productBrand}
                   onChange={(e) => setProductBrand(e.target.value)}
                   placeholder="e.g. Samsung, Apple, LG"
-                  className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-cyan-500"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-cyan-500"
                 />
               </div>
 
               <div>
-                <label className="block text-[11px] font-semibold text-slate-300 mb-1">
+                <label className="block text-[11px] font-semibold text-slate-700 mb-1">
                   Badge (Optional)
                 </label>
                 <input
@@ -700,14 +699,14 @@ export const AddStockModal: React.FC<AddStockModalProps> = ({ isOpen, onClose, o
                   value={badgeText}
                   onChange={(e) => setBadgeText(e.target.value)}
                   placeholder="e.g. New Launch, Best Seller"
-                  className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-cyan-500"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-cyan-500"
                 />
               </div>
             </div>
 
             {/* Product Title */}
             <div>
-              <label className="block text-[11px] font-semibold text-slate-300 mb-1">
+              <label className="block text-[11px] font-semibold text-slate-700 mb-1">
                 Product Title / Model Name <span className="text-rose-500">*</span>
               </label>
               <input
@@ -715,14 +714,14 @@ export const AddStockModal: React.FC<AddStockModalProps> = ({ isOpen, onClose, o
                 value={productName}
                 onChange={(e) => setProductName(e.target.value)}
                 placeholder="e.g. Samsung Galaxy S24 Ultra 5G (Titanium Gray, 512GB)"
-                className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-cyan-500"
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 focus:outline-none focus:border-cyan-500"
               />
             </div>
 
             {/* Tagline & Warranty */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="block text-[11px] font-semibold text-slate-300 mb-1">
+                <label className="block text-[11px] font-semibold text-slate-700 mb-1">
                   Short Tagline / Key Highlight
                 </label>
                 <input
@@ -730,11 +729,11 @@ export const AddStockModal: React.FC<AddStockModalProps> = ({ isOpen, onClose, o
                   value={tagline}
                   onChange={(e) => setTagline(e.target.value)}
                   placeholder="e.g. Flagship 200MP Quad Telephoto with Galaxy AI"
-                  className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-cyan-500"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-cyan-500"
                 />
               </div>
               <div>
-                <label className="block text-[11px] font-semibold text-slate-300 mb-1">
+                <label className="block text-[11px] font-semibold text-slate-700 mb-1">
                   Warranty Terms
                 </label>
                 <input
@@ -742,20 +741,20 @@ export const AddStockModal: React.FC<AddStockModalProps> = ({ isOpen, onClose, o
                   value={warranty}
                   onChange={(e) => setWarranty(e.target.value)}
                   placeholder="e.g. 1 Year Official Brand Warranty"
-                  className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-cyan-500"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-cyan-500"
                 />
               </div>
             </div>
 
             {/* Mandatory Showroom Pricing & Stock Fields (Highlighted in Cyan/Emerald) */}
-            <div className="p-4 rounded-xl border border-cyan-800/40 bg-gradient-to-r from-cyan-950/20 to-blue-950/20 space-y-3">
-              <span className="text-[11px] font-bold text-cyan-300 flex items-center gap-1.5 uppercase tracking-wide">
+            <div className="p-4 rounded-xl border border-cyan-200 bg-cyan-50 space-y-3">
+              <span className="text-[11px] font-bold text-cyan-700 flex items-center gap-1.5 uppercase tracking-wide">
                 Showroom Financials & Physical Stock
               </span>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
-                  <label className="block text-[11px] font-bold text-emerald-300 mb-1">
+                  <label className="block text-[11px] font-bold text-emerald-700 mb-1">
                     Selling Price (₹) <span className="text-rose-500">*</span>
                   </label>
                   <input
@@ -765,15 +764,15 @@ export const AddStockModal: React.FC<AddStockModalProps> = ({ isOpen, onClose, o
                     value={sellingPrice}
                     onChange={(e) => setSellingPrice(e.target.value)}
                     placeholder="e.g. 129999"
-                    className="w-full bg-slate-900 border border-emerald-700/60 rounded-xl px-3.5 py-2.5 text-sm font-bold text-emerald-300 focus:outline-none focus:border-emerald-400"
+                    className="w-full bg-slate-50 border border-emerald-200 rounded-xl px-3.5 py-2.5 text-sm font-bold text-emerald-700 focus:outline-none focus:border-emerald-400"
                   />
-                  <span className="text-[10px] text-slate-400 block mt-1">
+                  <span className="text-[10px] text-slate-500 block mt-1">
                     Actual showroom customer price.
                   </span>
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-semibold text-slate-300 mb-1">
+                  <label className="block text-[11px] font-semibold text-slate-700 mb-1">
                     Showroom MRP / Original (₹) <span className="text-slate-500">(Optional)</span>
                   </label>
                   <input
@@ -783,15 +782,15 @@ export const AddStockModal: React.FC<AddStockModalProps> = ({ isOpen, onClose, o
                     value={originalPrice}
                     onChange={(e) => setOriginalPrice(e.target.value)}
                     placeholder="e.g. 134999"
-                    className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-cyan-500"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 focus:outline-none focus:border-cyan-500"
                   />
-                  <span className="text-[10px] text-slate-400 block mt-1">
+                  <span className="text-[10px] text-slate-500 block mt-1">
                     Strikethrough reference. Defaults to selling price if empty.
                   </span>
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-bold text-cyan-300 mb-1">
+                  <label className="block text-[11px] font-bold text-cyan-700 mb-1">
                     Stock Quantity <span className="text-rose-500">*</span>
                   </label>
                   <input
@@ -801,9 +800,9 @@ export const AddStockModal: React.FC<AddStockModalProps> = ({ isOpen, onClose, o
                     value={stockQuantity}
                     onChange={(e) => setStockQuantity(e.target.value)}
                     placeholder="10"
-                    className="w-full bg-slate-900 border border-cyan-700/60 rounded-xl px-3.5 py-2.5 text-sm font-bold text-cyan-300 focus:outline-none focus:border-cyan-400"
+                    className="w-full bg-slate-50 border border-cyan-200 rounded-xl px-3.5 py-2.5 text-sm font-bold text-cyan-700 focus:outline-none focus:border-cyan-400"
                   />
-                  <span className="text-[10px] text-slate-400 block mt-1">
+                  <span className="text-[10px] text-slate-500 block mt-1">
                     Showroom units currently in stock.
                   </span>
                 </div>
@@ -811,14 +810,14 @@ export const AddStockModal: React.FC<AddStockModalProps> = ({ isOpen, onClose, o
             </div>
 
             {/* Product Variants Configuration (Flipkart / Amazon Architecture) */}
-            <div className="p-4 rounded-xl border border-cyan-800/40 bg-slate-900/40 space-y-3">
+            <div className="p-4 rounded-xl border border-cyan-200 bg-slate-50 space-y-3">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div className="flex items-center gap-2">
-                  <Layers className="w-4 h-4 text-cyan-400" />
-                  <span className="text-[11px] font-bold text-white uppercase tracking-wide">
+                  <Layers className="w-4 h-4 text-cyan-700" />
+                  <span className="text-[11px] font-bold text-slate-900 uppercase tracking-wide">
                     Product Variants ({variants.length})
                   </span>
-                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-cyan-950/80 border border-cyan-800/60 text-cyan-300 font-mono">
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-cyan-50 border border-cyan-200 text-cyan-700 font-mono">
                     Flipkart / Amazon Architecture
                   </span>
                 </div>
@@ -826,27 +825,27 @@ export const AddStockModal: React.FC<AddStockModalProps> = ({ isOpen, onClose, o
                   type="button"
                   size="sm"
                   onClick={() => handleAddVariant()}
-                  className="bg-cyan-500/20 text-cyan-300 hover:bg-cyan-500/30 border border-cyan-500/30 text-xs h-7 px-2.5 rounded-lg flex items-center gap-1 font-semibold"
+                  className="bg-cyan-50 text-cyan-700 hover:bg-cyan-50 border border-cyan-200 text-xs h-7 px-2.5 rounded-lg flex items-center gap-1 font-semibold"
                 >
                   <Plus className="w-3.5 h-3.5" /> Add Variant
                 </Button>
               </div>
 
-              <p className="text-[11px] text-slate-400">
+              <p className="text-[11px] text-slate-500">
                 Optional: If this device has multiple RAM / Storage / Color options, add them below. Each variant has its own selling price and physical stock.
               </p>
 
               {/* Quick Preset Buttons */}
               <div className="flex flex-wrap items-center gap-1.5 pt-1">
-                <span className="text-[10px] text-slate-400 font-medium">Add Quick Presets:</span>
+                <span className="text-[10px] text-slate-500 font-medium">Add Quick Presets:</span>
                 {['8GB + 128GB', '8GB + 256GB', '12GB + 256GB', '12GB + 512GB', '16GB + 512GB'].map((preset) => (
                   <button
                     key={preset}
                     type="button"
                     onClick={() => handleAddVariant(preset)}
-                    className="text-[10px] px-2.5 py-1 rounded-md bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700/60 transition-colors flex items-center gap-1 cursor-pointer font-medium"
+                    className="text-[10px] px-2.5 py-1 rounded-md bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-300/60 transition-colors flex items-center gap-1 cursor-pointer font-medium"
                   >
-                    <Plus className="w-2.5 h-2.5 text-cyan-400" />
+                    <Plus className="w-2.5 h-2.5 text-cyan-700" />
                     {preset}
                   </button>
                 ))}
@@ -858,11 +857,11 @@ export const AddStockModal: React.FC<AddStockModalProps> = ({ isOpen, onClose, o
                   {variants.map((v, idx) => (
                     <div
                       key={v.id}
-                      className="p-3 rounded-xl bg-slate-950 border border-slate-800/90 space-y-2 hover:border-slate-700/80 transition-colors shadow-sm"
+                      className="p-3 rounded-xl bg-white border border-slate-200/90 space-y-2 hover:border-slate-300/80 transition-colors shadow-sm"
                     >
                       <div className="flex items-center justify-between gap-2">
-                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
-                          <span className="w-4 h-4 rounded-full bg-cyan-950 text-cyan-300 border border-cyan-800/60 flex items-center justify-center text-[9px] font-mono">
+                        <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+                          <span className="w-4 h-4 rounded-full bg-cyan-50 text-cyan-700 border border-cyan-200 flex items-center justify-center text-[9px] font-mono">
                             {idx + 1}
                           </span>
                           Variant #{idx + 1}
@@ -870,7 +869,7 @@ export const AddStockModal: React.FC<AddStockModalProps> = ({ isOpen, onClose, o
                         <button
                           type="button"
                           onClick={() => handleRemoveVariant(v.id)}
-                          className="text-slate-500 hover:text-rose-400 p-1 rounded-md hover:bg-rose-950/30 transition-colors"
+                          className="text-slate-500 hover:text-rose-700 p-1 rounded-md hover:bg-rose-50 transition-colors"
                           title="Remove variant"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
@@ -879,44 +878,44 @@ export const AddStockModal: React.FC<AddStockModalProps> = ({ isOpen, onClose, o
 
                       <div className="grid grid-cols-1 sm:grid-cols-4 gap-2">
                         <div className="sm:col-span-1">
-                          <label className="block text-[10px] text-slate-400 mb-0.5">Configuration</label>
+                          <label className="block text-[10px] text-slate-500 mb-0.5">Configuration</label>
                           <input
                             type="text"
                             placeholder="e.g. 8GB + 128GB"
                             value={v.name}
                             onChange={(e) => handleUpdateVariant(v.id, 'name', e.target.value)}
-                            className="w-full px-2.5 py-1.5 bg-slate-900 border border-slate-800 rounded-lg text-white text-xs focus:outline-none focus:border-cyan-500 font-medium"
+                            className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-slate-900 text-xs focus:outline-none focus:border-cyan-500 font-medium"
                           />
                         </div>
                         <div>
-                          <label className="block text-[10px] text-emerald-400 mb-0.5 font-medium">Selling Price (₹)</label>
+                          <label className="block text-[10px] text-emerald-700 mb-0.5 font-medium">Selling Price (₹)</label>
                           <input
                             type="number"
                             placeholder="e.g. 24999"
                             value={v.price}
                             onChange={(e) => handleUpdateVariant(v.id, 'price', e.target.value)}
-                            className="w-full px-2.5 py-1.5 bg-slate-900 border border-emerald-900/60 rounded-lg text-emerald-300 text-xs focus:outline-none focus:border-emerald-400 font-mono font-bold"
+                            className="w-full px-2.5 py-1.5 bg-slate-50 border border-emerald-200 rounded-lg text-emerald-700 text-xs focus:outline-none focus:border-emerald-400 font-mono font-bold"
                           />
                         </div>
                         <div>
-                          <label className="block text-[10px] text-slate-400 mb-0.5">MRP / Original (₹)</label>
+                          <label className="block text-[10px] text-slate-500 mb-0.5">MRP / Original (₹)</label>
                           <input
                             type="number"
                             placeholder="e.g. 27999"
                             value={v.originalPrice}
                             onChange={(e) => handleUpdateVariant(v.id, 'originalPrice', e.target.value)}
-                            className="w-full px-2.5 py-1.5 bg-slate-900 border border-slate-800 rounded-lg text-slate-300 text-xs focus:outline-none focus:border-cyan-500 font-mono"
+                            className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-slate-700 text-xs focus:outline-none focus:border-cyan-500 font-mono"
                           />
                         </div>
                         <div>
-                          <label className="block text-[10px] text-cyan-400 mb-0.5 font-medium">Stock Units</label>
+                          <label className="block text-[10px] text-cyan-700 mb-0.5 font-medium">Stock Units</label>
                           <input
                             type="number"
                             min="0"
                             placeholder="10"
                             value={v.stockQuantity}
                             onChange={(e) => handleUpdateVariant(v.id, 'stockQuantity', e.target.value)}
-                            className="w-full px-2.5 py-1.5 bg-slate-900 border border-cyan-900/60 rounded-lg text-cyan-300 text-xs focus:outline-none focus:border-cyan-400 font-mono"
+                            className="w-full px-2.5 py-1.5 bg-slate-50 border border-cyan-200 rounded-lg text-cyan-700 text-xs focus:outline-none focus:border-cyan-400 font-mono"
                           />
                         </div>
                       </div>
@@ -927,10 +926,10 @@ export const AddStockModal: React.FC<AddStockModalProps> = ({ isOpen, onClose, o
 
               {/* Live Variant Summary */}
               {variants.length > 0 && (
-                <div className="pt-1 flex flex-wrap items-center justify-between gap-2 text-[11px] text-slate-400 bg-slate-950/70 p-2.5 rounded-xl border border-slate-800/80">
+                <div className="pt-1 flex flex-wrap items-center justify-between gap-2 text-[11px] text-slate-500 bg-white p-2.5 rounded-xl border border-slate-200/80">
                   <span>
                     Lowest Variant Price:{' '}
-                    <strong className="text-emerald-400 font-mono">
+                    <strong className="text-emerald-700 font-mono">
                       {formatINR(
                         Math.min(
                           ...variants
@@ -943,7 +942,7 @@ export const AddStockModal: React.FC<AddStockModalProps> = ({ isOpen, onClose, o
                   </span>
                   <span>
                     Total Variant Stock:{' '}
-                    <strong className="text-cyan-400 font-mono">
+                    <strong className="text-cyan-700 font-mono">
                       {variants.reduce(
                         (sum, v) => sum + (parseInt(v.stockQuantity, 10) || 0),
                         0
@@ -956,15 +955,15 @@ export const AddStockModal: React.FC<AddStockModalProps> = ({ isOpen, onClose, o
             </div>
 
             {/* Product Image Section */}
-            <div className="p-4 rounded-xl border border-slate-800/80 bg-slate-900/30 space-y-3">
-              <span className="text-[11px] font-bold text-slate-300 block uppercase tracking-wide">
+            <div className="p-4 rounded-xl border border-slate-200/80 bg-slate-50 space-y-3">
+              <span className="text-[11px] font-bold text-slate-700 block uppercase tracking-wide">
                 Product Image (Studio Catalog or Authorized Upload)
               </span>
 
               <div className="flex flex-col sm:flex-row items-center gap-4">
                 {/* Thumbnail Preview Card */}
                 <div className="flex flex-col items-center gap-1.5 shrink-0">
-                  <div className="w-24 h-24 rounded-xl border border-slate-800 bg-slate-900/90 flex items-center justify-center overflow-hidden">
+                  <div className="w-24 h-24 rounded-xl border border-slate-200 bg-slate-50 flex items-center justify-center overflow-hidden">
                     {imagePreview ? (
                       <img
                         src={imagePreview}
@@ -976,7 +975,7 @@ export const AddStockModal: React.FC<AddStockModalProps> = ({ isOpen, onClose, o
                     )}
                   </div>
                   {imagePreview && (
-                    <span className="text-[9px] font-bold text-cyan-400 uppercase tracking-wider">
+                    <span className="text-[9px] font-bold text-cyan-700 uppercase tracking-wider">
                       {imageSourceMode === 'catalog' ? 'Catalog Image' : imageSourceMode === 'upload' ? 'Showroom Photo' : 'Web Link'}
                     </span>
                   )}
@@ -997,17 +996,17 @@ export const AddStockModal: React.FC<AddStockModalProps> = ({ isOpen, onClose, o
                       variant="outline"
                       size="sm"
                       onClick={() => fileInputRef.current?.click()}
-                      className="border-slate-700 hover:border-slate-600 text-slate-200 text-xs flex items-center gap-1.5"
+                      className="border-slate-300 hover:border-slate-300 text-slate-800 text-xs flex items-center gap-1.5"
                     >
-                      <Upload className="w-3.5 h-3.5 text-cyan-400" /> Upload Showroom Photo
+                      <Upload className="w-3.5 h-3.5 text-cyan-700" /> Upload Showroom Photo
                     </Button>
                     <span className="text-[11px] text-slate-500">Max 5MB (PNG, JPG, WebP)</span>
                   </div>
 
                   {selectedFile && imageSourceMode === 'upload' && (
-                    <div className="flex items-center gap-2 text-[10px] text-slate-400 bg-slate-900/80 px-2.5 py-1 rounded-lg border border-slate-800">
+                    <div className="flex items-center gap-2 text-[10px] text-slate-500 bg-slate-50 px-2.5 py-1 rounded-lg border border-slate-200">
                       <span>Selected file:</span>
-                      <span className="text-cyan-300 font-semibold truncate max-w-[200px]">{selectedFile.name}</span>
+                      <span className="text-cyan-700 font-semibold truncate max-w-[200px]">{selectedFile.name}</span>
                       <span className="text-slate-500">({(selectedFile.size / 1024).toFixed(0)} KB)</span>
                     </div>
                   )}
@@ -1024,7 +1023,7 @@ export const AddStockModal: React.FC<AddStockModalProps> = ({ isOpen, onClose, o
                         setImageSourceMode('url')
                       }}
                       placeholder="Or enter direct image URL (https://...)"
-                      className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-slate-300 placeholder-slate-600 focus:outline-none focus:border-cyan-500"
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs text-slate-700 placeholder-slate-400 focus:outline-none focus:border-cyan-500"
                     />
                   </div>
                 </div>
@@ -1035,7 +1034,7 @@ export const AddStockModal: React.FC<AddStockModalProps> = ({ isOpen, onClose, o
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <div>
-                  <span className="text-[11px] font-bold text-slate-300 uppercase tracking-wide block">
+                  <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wide block">
                     Technical Specifications
                   </span>
                   <span className="text-[10px] text-slate-500">
@@ -1047,7 +1046,7 @@ export const AddStockModal: React.FC<AddStockModalProps> = ({ isOpen, onClose, o
                   variant="outline"
                   size="sm"
                   onClick={handleAddSpec}
-                  className="border-slate-800 hover:border-slate-700 text-cyan-400 hover:text-cyan-300 text-xs flex items-center gap-1"
+                  className="border-slate-200 hover:border-slate-300 text-cyan-700 hover:text-cyan-700 text-xs flex items-center gap-1"
                 >
                   <Plus className="w-3.5 h-3.5" /> Add Spec Row
                 </Button>
@@ -1061,19 +1060,19 @@ export const AddStockModal: React.FC<AddStockModalProps> = ({ isOpen, onClose, o
                       value={spec.label}
                       onChange={(e) => handleUpdateSpec(index, 'label', e.target.value)}
                       placeholder="Label (e.g. Display, Battery, RAM)"
-                      className="w-1/3 bg-slate-900 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-cyan-500"
+                      className="w-1/3 bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs text-slate-900 focus:outline-none focus:border-cyan-500"
                     />
                     <input
                       type="text"
                       value={spec.value}
                       onChange={(e) => handleUpdateSpec(index, 'value', e.target.value)}
                       placeholder="Specification details"
-                      className="flex-1 bg-slate-900 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-cyan-500"
+                      className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs text-slate-900 focus:outline-none focus:border-cyan-500"
                     />
                     <button
                       type="button"
                       onClick={() => handleRemoveSpec(index)}
-                      className="p-2 text-slate-500 hover:text-rose-400 transition-colors"
+                      className="p-2 text-slate-500 hover:text-rose-700 transition-colors"
                       aria-label="Remove spec row"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
@@ -1093,7 +1092,7 @@ export const AddStockModal: React.FC<AddStockModalProps> = ({ isOpen, onClose, o
         </div>
 
         {/* Modal Footer */}
-        <div className="p-4 sm:p-5 border-t border-slate-800/80 bg-slate-900/60 flex items-center justify-between sticky bottom-0 z-10 backdrop-blur-lg">
+        <div className="p-4 sm:p-5 border-t border-slate-200/80 bg-slate-50 flex items-center justify-between sticky bottom-0 z-10 backdrop-blur-lg">
           <Button
             type="button"
             variant="outline"
@@ -1101,7 +1100,7 @@ export const AddStockModal: React.FC<AddStockModalProps> = ({ isOpen, onClose, o
               clearObjectUrl()
               onClose()
             }}
-            className="border-slate-800 text-slate-400 hover:text-white text-xs"
+            className="border-slate-200 text-slate-500 hover:text-slate-900 text-xs"
           >
             Cancel
           </Button>
@@ -1111,7 +1110,7 @@ export const AddStockModal: React.FC<AddStockModalProps> = ({ isOpen, onClose, o
               type="button"
               disabled={isSaving}
               onClick={() => handleSaveClick(false)}
-              className="bg-gradient-to-r from-emerald-500 via-teal-600 to-cyan-600 hover:from-emerald-400 hover:to-cyan-500 text-white font-bold text-xs px-6 py-2.5 rounded-xl flex items-center gap-2 shadow-lg shadow-emerald-500/20"
+              className="bg-slate-900 hover:bg-slate-800 text-white whitespace-nowrap font-bold text-xs px-6 py-2.5 rounded-xl flex items-center gap-2 shadow-lg "
             >
               {isSaving ? (
                 <>
@@ -1119,7 +1118,7 @@ export const AddStockModal: React.FC<AddStockModalProps> = ({ isOpen, onClose, o
                 </>
               ) : (
                 <>
-                  <CheckCircle2 className="w-4 h-4" /> Save Product to Showroom Inventory
+                  <CheckCircle2 className="w-4 h-4" /> Save product
                 </>
               )}
             </Button>
