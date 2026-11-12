@@ -2,7 +2,6 @@ import { Product, StoreInfo, ProductCategory, ProductCategoryType } from '@/type
 import {
   storeDetails,
   brandPartners,
-  customerReviews,
   faqList,
 } from '@/data/mockProducts'
 import { supabase, isSupabaseConfigured } from '@/lib/supabase'
@@ -1251,13 +1250,6 @@ export const productService = {
    */
   getBrandPartners: () => {
     return brandPartners
-  },
-
-  /**
-   * Customer testimonials
-   */
-  getCustomerReviews: () => {
-    return customerReviews
   },
 
   /**

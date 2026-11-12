@@ -43,36 +43,6 @@ export const brandPartners = [
   { name: "Motorola", logo: "📡 Authorized" },
 ]
 
-export const customerReviews = [
-  {
-    id: 1,
-    name: "Rajesh K.",
-    location: "Manachanallur",
-    rating: 5,
-    date: "Verified Customer",
-    comment: "100% original iPhone 16 Pro Max sealed box with official GST invoice. Data transfer was done for free right in the showroom!",
-    product: "Apple iPhone 16 Pro Max",
-  },
-  {
-    id: 2,
-    name: "Suresh Raman",
-    location: "Tiruchirappalli",
-    rating: 5,
-    date: "Verified Customer",
-    comment: "Purchased the Sony Bravia OLED TV. Got seamless instant billing at the showroom counter and prompt brand doorstep wall mounting.",
-    product: "Sony BRAVIA XR 65\" 4K OLED",
-  },
-  {
-    id: 3,
-    name: "Priya M.",
-    location: "Thuraiyur",
-    rating: 5,
-    date: "Verified Customer",
-    comment: "Bought the LG AI washing machine with festive pricing. Genuine showroom warranty and very helpful customer guidance.",
-    product: "LG 9 Kg AI Washer",
-  },
-]
-
 export const faqList = [
   {
     question: "Are all products brand-new and 100% genuine?",
