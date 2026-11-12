@@ -1,20 +1,15 @@
-import React, { useState } from 'react'
-import { Link, useLocation, useNavigate } from 'react-router-dom'
+import React, { useEffect, useState } from 'react'
+import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom'
 import { useAuthStore } from '@/store/useAuthStore'
-import { isSupabaseConfigured } from '@/lib/supabase'
-import { 
-  LayoutDashboard, 
-  Tag, 
-  Package, 
-  Boxes, 
-  Settings, 
-  ExternalLink, 
-  LogOut, 
-  Menu, 
-  X, 
-  Sparkles,
-  Store,
-  FileSpreadsheet
+import {
+  LayoutDashboard,
+  Package,
+  Image as ImageIcon,
+  FileSpreadsheet,
+  ExternalLink,
+  LogOut,
+  Menu,
+  X,
 } from 'lucide-react'
 
 interface AdminLayoutProps {
@@ -24,198 +19,133 @@ interface AdminLayoutProps {
   actions?: React.ReactNode
 }
 
-export const AdminLayout: React.FC<AdminLayoutProps> = ({ 
-  children, 
-  title, 
-  subtitle,
-  actions 
-}) => {
-  const [sidebarOpen, setSidebarOpen] = useState(false)
-  const { user, logout } = useAuthStore()
-  const location = useLocation()
-  const navigate = useNavigate()
+const NAV_ITEMS = [
+  { label: 'Dashboard', path: '/admin', icon: LayoutDashboard, end: true },
+  { label: 'Products', path: '/admin/products', icon: Package, end: false },
+  { label: 'Hero Banners', path: '/admin/banners', icon: ImageIcon, end: false },
+  { label: 'Stock Import', path: '/admin/import', icon: FileSpreadsheet, end: false },
+]
 
-  const navItems = [
-    { label: 'Dashboard', path: '/admin', icon: LayoutDashboard },
-    { label: 'Hero Banners', path: '/admin/banners', icon: Sparkles },
-    { label: 'Stock Import (Excel)', path: '/admin/import', icon: FileSpreadsheet, highlight: true },
-    { label: 'Price Management', path: '/admin/prices', icon: Tag },
-    { label: 'Product Catalog', path: '/admin/products', icon: Package },
-    { label: 'Inventory & Stock', path: '/admin/inventory', icon: Boxes },
-    { label: 'Settings', path: '/admin/settings', icon: Settings },
-  ]
+export const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title, subtitle, actions }) => {
+  const [menuOpen, setMenuOpen] = useState(false)
+  const { user, logout } = useAuthStore()
+  const navigate = useNavigate()
+  const location = useLocation()
+
+  // Close the mobile menu after navigating.
+  useEffect(() => setMenuOpen(false), [location.pathname])
+
+  useEffect(() => {
+    document.title = `${title} · Gayathri Admin`
+  }, [title])
 
   const handleLogout = async () => {
     await logout()
     navigate('/admin/login')
   }
 
-  const isConfigured = isSupabaseConfigured()
+  const nav = (
+    <nav className="flex flex-col gap-1" aria-label="Admin">
+      {NAV_ITEMS.map(({ label, path, icon: Icon, end }) => (
+        <NavLink
+          key={path}
+          to={path}
+          end={end}
+          className={({ isActive }) =>
+            `flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
+              isActive ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+            }`
+          }
+        >
+          <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
+          {label}
+        </NavLink>
+      ))}
+    </nav>
+  )
+
+  const footer = (
+    <div className="space-y-1 border-t border-slate-200 pt-4">
+      <Link
+        to="/"
+        target="_blank"
+        className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+      >
+        <ExternalLink className="h-4 w-4" aria-hidden="true" />
+        View website
+      </Link>
+      <button
+        type="button"
+        onClick={handleLogout}
+        className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-900 cursor-pointer"
+      >
+        <LogOut className="h-4 w-4" aria-hidden="true" />
+        Sign out
+      </button>
+      {user?.email && <p className="truncate px-3 pt-2 text-xs text-slate-400">{user.email}</p>}
+    </div>
+  )
 
   return (
-    <div className="min-h-screen bg-[#070709] text-slate-100 flex flex-col md:flex-row font-['Inter']">
-      
-      {/* Mobile Top Header */}
-      <div className="md:hidden flex items-center justify-between p-4 border-b border-slate-800 bg-slate-950/90 backdrop-blur-md sticky top-0 z-40">
-        <div className="flex items-center gap-2.5">
-          <div className="bg-white px-2 py-1 rounded-lg">
-            <img 
-              src="/images/gayathri-logo.png" 
-              alt="Gayathri Communication" 
-              className="h-6 w-auto object-contain"
-            />
-          </div>
-          <span className="font-bold text-xs tracking-tight text-cyan-400 uppercase">
-            Admin Suite
-          </span>
-        </div>
-
+    <div className="admin-shell min-h-screen bg-slate-50 text-slate-900 font-['Inter']">
+      {/* Mobile top bar */}
+      <header className="sticky top-0 z-40 flex items-center justify-between border-b border-slate-200 bg-white px-4 py-3 md:hidden">
+        <Link to="/admin" className="flex items-center gap-2">
+          <img src="/images/gayathri-logo.png" alt="Gayathri Communication" className="h-7 w-auto" />
+          <span className="text-xs font-semibold text-slate-500">Admin</span>
+        </Link>
         <button
-          onClick={() => setSidebarOpen(!sidebarOpen)}
-          className="p-2 rounded-xl border border-slate-800 text-slate-300"
-          aria-label="Toggle menu"
+          type="button"
+          onClick={() => setMenuOpen((o) => !o)}
+          className="rounded-lg border border-slate-200 p-2 text-slate-700 cursor-pointer"
+          aria-label={menuOpen ? 'Close menu' : 'Open menu'}
+          aria-expanded={menuOpen}
         >
-          {sidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+          {menuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
         </button>
-      </div>
+      </header>
 
-      {/* Sidebar Navigation */}
-      <aside
-        className={`fixed inset-y-0 left-0 z-50 w-64 bg-slate-950/95 border-r border-slate-800 p-5 flex flex-col justify-between backdrop-blur-xl transition-transform duration-300 md:static md:translate-x-0 ${
-          sidebarOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full'
-        }`}
-      >
-        <div className="space-y-6">
-          {/* Logo & Showroom Title */}
-          <div className="space-y-2 px-1">
-            <div className="bg-white px-2.5 py-1.5 rounded-xl shadow-sm inline-block">
-              <img 
-                src="/images/gayathri-logo.png" 
-                alt="Gayathri Communication" 
-                className="h-7 w-auto object-contain"
-              />
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-[10px] bg-cyan-950 border border-cyan-800/50 text-cyan-400 px-2 py-0.5 rounded font-bold uppercase tracking-wider">
-                Admin Suite
-              </span>
-              <span className="text-[10px] text-slate-400">
-                Management Portal
-              </span>
-            </div>
-          </div>
-
-          {/* Navigation Links */}
-          <nav className="space-y-1.5 pt-2">
-            {navItems.map((item) => {
-              const Icon = item.icon
-              const isActive = location.pathname === item.path || (item.path === '/admin/banners' && location.pathname === '/admin/banner')
-              return (
-                <Link
-                  key={item.path}
-                  to={item.path}
-                  onClick={() => setSidebarOpen(false)}
-                  className={`flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all ${
-                    isActive
-                      ? 'bg-gradient-to-r from-cyan-500/20 to-blue-600/20 text-cyan-300 border border-cyan-500/30 shadow-sm'
-                      : 'text-slate-400 hover:text-white hover:bg-slate-900 border border-transparent'
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <Icon className={`w-4 h-4 ${isActive ? 'text-cyan-400' : 'text-slate-500'}`} />
-                    <span>{item.label}</span>
-                  </div>
-                  {item.highlight && (
-                    <span className="text-[9px] bg-cyan-500 text-slate-950 px-1.5 py-0.5 rounded font-extrabold uppercase">
-                      Core
-                    </span>
-                  )}
-                </Link>
-              )
-            })}
-          </nav>
-        </div>
-
-        {/* Bottom Section: Store link & User Profile */}
-        <div className="pt-6 border-t border-slate-900 space-y-4">
-          {/* Live Storefront Link */}
-          <Link
-            to="/"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center justify-between px-3.5 py-2 rounded-xl text-xs font-medium text-slate-400 hover:text-white bg-slate-900/60 border border-slate-800 hover:border-slate-700 transition-colors"
-          >
-            <div className="flex items-center gap-2">
-              <Store className="w-3.5 h-3.5 text-cyan-400" />
-              <span>View Live Store</span>
-            </div>
-            <ExternalLink className="w-3.5 h-3.5 text-slate-500" />
-          </Link>
-
-          {/* DB Status Badge */}
-          <div className="px-3 py-1.5 rounded-lg bg-slate-900/40 border border-slate-800/80 flex items-center justify-between text-[10px]">
-            <span className="text-slate-500">Database:</span>
-            {isConfigured ? (
-              <span className="text-emerald-400 font-semibold flex items-center gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
-                Supabase Live
-              </span>
-            ) : (
-              <span className="text-amber-400 font-semibold flex items-center gap-1">
-                <Sparkles className="w-3 h-3 text-amber-400" />
-                Local Demo Mode
-              </span>
-            )}
-          </div>
-
-          {/* Logged In User Pill */}
-          <div className="flex items-center justify-between pt-2">
-            <div className="truncate max-w-[150px]">
-              <p className="text-xs font-bold text-white truncate">
-                {user?.email?.split('@')[0] || 'Administrator'}
-              </p>
-              <p className="text-[10px] text-slate-500 truncate">{user?.email || 'admin@store'}</p>
-            </div>
-            <button
-              onClick={handleLogout}
-              className="p-2 rounded-xl text-slate-400 hover:text-red-400 hover:bg-slate-900 transition-colors"
-              title="Sign Out"
-              aria-label="Sign out"
-            >
-              <LogOut className="w-4 h-4" />
-            </button>
+      {/* Mobile menu drawer */}
+      {menuOpen && (
+        <div className="fixed inset-0 z-30 md:hidden" role="dialog" aria-modal="true">
+          <button
+            type="button"
+            className="absolute inset-0 bg-slate-900/40"
+            onClick={() => setMenuOpen(false)}
+            aria-label="Close menu"
+          />
+          <div className="absolute left-0 top-[57px] bottom-0 flex w-72 flex-col justify-between bg-white p-4 shadow-xl">
+            {nav}
+            {footer}
           </div>
         </div>
-      </aside>
+      )}
 
-      {/* Main Content Area */}
-      <div className="flex-1 flex flex-col min-w-0 overflow-y-auto">
-        {/* Top Content Bar */}
-        <header className="px-6 sm:px-8 py-6 border-b border-slate-800/80 bg-slate-950/40 backdrop-blur-md flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-white font-['Outfit'] tracking-tight">
-              {title}
-            </h1>
-            {subtitle && (
-              <p className="text-xs sm:text-sm text-slate-400 mt-1">
-                {subtitle}
-              </p>
-            )}
+      <div className="md:flex">
+        {/* Desktop sidebar */}
+        <aside className="sticky top-0 hidden h-screen w-60 shrink-0 flex-col justify-between border-r border-slate-200 bg-white p-4 md:flex">
+          <div className="space-y-6">
+            <Link to="/admin" className="flex items-center gap-2 px-1">
+              <img src="/images/gayathri-logo.png" alt="Gayathri Communication" className="h-8 w-auto" />
+            </Link>
+            {nav}
           </div>
+          {footer}
+        </aside>
 
-          {actions && (
-            <div className="flex items-center gap-2.5">
-              {actions}
+        <main className="min-w-0 flex-1">
+          <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
+            <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+              <div>
+                <h1 className="font-['Outfit'] text-2xl font-bold tracking-tight text-slate-900">{title}</h1>
+                {subtitle && <p className="mt-1 text-sm text-slate-500">{subtitle}</p>}
+              </div>
+              {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
             </div>
-          )}
-        </header>
-
-        {/* Page Body */}
-        <main className="p-6 sm:p-8 flex-1">
-          {children}
+            {children}
+          </div>
         </main>
       </div>
-
     </div>
   )
 }

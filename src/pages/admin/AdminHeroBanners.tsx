@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { AdminLayout } from '@/components/admin/AdminLayout'
+import { HeroSection } from '@/components/home/HeroSection'
 import { useHeroBanners } from '@/hooks/useHeroBanners'
 import { HeroSlideConfig } from '@/types/heroBanner'
 import { productService } from '@/services/productService'
@@ -387,18 +388,18 @@ export const AdminHeroBanners: React.FC = () => {
 
   return (
     <AdminLayout
-      title="Hero Showcase Banners"
-      subtitle="Direct admin control for the homepage flagship spotlight carousel. Changes update live on the storefront."
+      title="Hero Banners"
+      subtitle="The big slides at the top of the homepage. Pick products, reorder, or hide slides."
       actions={
-        <div className="flex items-center gap-2.5">
+        <div className="flex flex-wrap items-center gap-2">
           <Link to="/" target="_blank" rel="noopener noreferrer">
             <Button
               variant="outline"
               size="sm"
-              className="text-xs font-semibold gap-1.5 border-slate-700 bg-slate-900 text-slate-200 hover:bg-slate-800"
+              className="text-xs font-semibold gap-1.5 border-slate-300 bg-slate-50 text-slate-800 hover:bg-slate-100"
             >
               <ExternalLink className="w-3.5 h-3.5" />
-              <span>Live Storefront</span>
+              <span>View website</span>
             </Button>
           </Link>
 
@@ -406,26 +407,26 @@ export const AdminHeroBanners: React.FC = () => {
             onClick={() => setShowResetConfirm(true)}
             variant="ghost"
             size="sm"
-            className="text-xs font-medium text-slate-400 hover:text-amber-400 hover:bg-slate-800/60 gap-1.5"
+            className="text-xs font-medium text-slate-500 hover:text-amber-700 hover:bg-slate-100 gap-1.5"
             title="Reset to default flagship showroom slides"
           >
             <RotateCcw className="w-3.5 h-3.5" />
-            <span>Restore Defaults</span>
+            <span>Reset to defaults</span>
           </Button>
 
           <Button
             onClick={() => setShowStockPicker(true)}
             size="sm"
-            className="text-xs font-bold gap-1.5 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 shadow-lg shadow-amber-500/20 cursor-pointer"
+            className="text-xs font-bold gap-1.5 bg-slate-900 hover:bg-slate-800 text-white shadow-lg cursor-pointer"
           >
             <Sparkles className="w-4 h-4" />
-            <span>Select from Stocks</span>
+            <span>Add from products</span>
           </Button>
 
           <Button
             onClick={handleAddNew}
             size="sm"
-            className="text-xs font-bold gap-1.5 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 shadow-lg shadow-cyan-500/20 cursor-pointer"
+            className="text-xs font-bold gap-1.5 bg-slate-900 hover:bg-slate-800 text-white shadow-lg cursor-pointer"
           >
             <Plus className="w-4 h-4" />
             <span>Add Banner Slide</span>
@@ -440,202 +441,52 @@ export const AdminHeroBanners: React.FC = () => {
           <div
             className={`p-4 rounded-2xl border flex items-center justify-between text-xs font-medium transition-all ${
               feedback.type === 'success'
-                ? 'bg-emerald-950/80 border-emerald-800/80 text-emerald-300'
-                : 'bg-rose-950/80 border-rose-800/80 text-rose-300'
+                ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : 'bg-rose-50 border-rose-200 text-rose-700'
             }`}
           >
             <div className="flex items-center gap-2.5">
               {feedback.type === 'success' ? (
-                <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                <CheckCircle2 className="w-4 h-4 text-emerald-700 shrink-0" />
               ) : (
-                <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
+                <AlertCircle className="w-4 h-4 text-rose-700 shrink-0" />
               )}
               <span>{feedback.message}</span>
             </div>
             <button
               onClick={() => setFeedback(null)}
-              className="p-1 hover:bg-slate-800/60 rounded-lg"
+              className="p-1 hover:bg-slate-100 rounded-lg"
             >
               <X className="w-4 h-4" />
             </button>
           </div>
         )}
 
-        {/* Live Showroom Hero Preview Section */}
-        <div className="p-6 rounded-3xl border border-slate-800 bg-slate-950/70 shadow-2xl space-y-4">
-          <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-800">
-            <div className="flex items-center gap-2.5">
-              <div className="p-2 rounded-xl bg-cyan-500/10 text-cyan-400">
-                <Eye className="w-4 h-4" />
-              </div>
-              <div>
-                <h3 className="text-sm font-bold text-white font-['Outfit']">
-                  Storefront Live Spotlight Preview
-                </h3>
-                <p className="text-[11px] text-slate-400">
-                  This is exactly how the customer sees this slide on the homepage
-                </p>
-              </div>
+        {/* Live preview: the exact component customers see on the homepage */}
+        <section className="rounded-xl border border-slate-200 bg-white">
+          <header className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
+            <div>
+              <h2 className="text-sm font-semibold text-slate-900">Homepage preview</h2>
+              <p className="text-xs text-slate-500">Exactly what customers see. Only slides marked Active are shown.</p>
             </div>
-
-            <div className="flex items-center gap-2">
-              <Badge className="bg-slate-900 border border-slate-700 text-slate-300 text-[10px] font-mono">
-                Slide {activePreviewIndex + 1} of {slides.length}
-              </Badge>
-              {previewSlide && (
-                <Button
-                  onClick={() => handleEdit(previewSlide)}
-                  size="sm"
-                  variant="outline"
-                  className="text-xs h-7 gap-1 border-slate-700 bg-slate-900 text-cyan-400 hover:text-white hover:bg-slate-800"
-                >
-                  <Edit3 className="w-3 h-3" />
-                  Edit This Slide
-                </Button>
-              )}
-            </div>
+          </header>
+          <div className="bg-[#fafaf9] py-2">
+            <HeroSection />
           </div>
-
-          {/* Interactive Mini-Stage mirroring HeroSection.tsx */}
-          {previewSlide && (
-            <div className="relative overflow-hidden rounded-2xl bg-[#0f1115] text-white p-5 sm:p-7 border border-neutral-800/80 shadow-xl">
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
-                
-                {/* Left side: title, description, price, specs */}
-                <div className="lg:col-span-7 space-y-3.5 text-left">
-                  <div className="flex items-center gap-2">
-                    <span className="text-[10px] font-bold text-cyan-400 bg-cyan-950/80 px-2 py-0.5 rounded-md border border-cyan-800/50 uppercase tracking-wider">
-                      {previewSlide.brandTag || 'Curated Showcase'}
-                    </span>
-                    {previewSlide.badgeText && (
-                      <span className="text-[10px] font-medium text-neutral-400 bg-neutral-900 px-2 py-0.5 rounded-md">
-                        {previewSlide.badgeText}
-                      </span>
-                    )}
-                  </div>
-
-                  <h2 className="text-2xl sm:text-3xl font-extrabold text-white font-['Outfit'] tracking-tight leading-snug">
-                    {previewSlide.modelName}
-                  </h2>
-
-                  <p className="text-xs sm:text-sm text-neutral-300 max-w-lg leading-relaxed line-clamp-3">
-                    {previewSlide.description}
-                  </p>
-
-                  {/* Price Box */}
-                  <div className="bg-neutral-900/90 rounded-xl p-3.5 max-w-md space-y-2 border border-neutral-800/60">
-                    <div className="flex flex-wrap items-baseline justify-between gap-2">
-                      <div className="flex items-baseline gap-2.5">
-                        <span className="text-2xl sm:text-3xl font-extrabold text-white font-['Outfit']">
-                          {formatINR(previewSlide.fallbackPrice)}
-                        </span>
-                        {previewSlide.fallbackOriginalPrice > previewSlide.fallbackPrice && (
-                          <span className="text-xs text-neutral-400 line-through">
-                            MRP {formatINR(previewSlide.fallbackOriginalPrice)}
-                          </span>
-                        )}
-                      </div>
-
-                      {previewDiscount > 0 && (
-                        <span className="text-[11px] font-bold text-emerald-300 bg-emerald-950/80 px-2 py-0.5 rounded-full border border-emerald-800/60">
-                          Save {formatINR(previewSavings)} ({previewDiscount}% Off)
-                        </span>
-                      )}
-                    </div>
-
-                    <div className="flex items-center text-[11px] text-emerald-400">
-                      <span className="flex items-center gap-1.5 font-medium">
-                        <ShieldCheck className="w-3 h-3 text-emerald-400" />
-                        <span>Official Brand Sealed • Showroom Guarantee</span>
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Spec pills */}
-                  <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
-                    {(previewSlide.specs || []).map((spec, i) => (
-                      <span
-                        key={i}
-                        className="text-[11px] font-medium bg-neutral-800/90 text-neutral-200 px-2.5 py-1 rounded-md flex items-center gap-1.5"
-                      >
-                        <Check className="w-3 h-3 text-emerald-400" />
-                        {spec}
-                      </span>
-                    ))}
-                  </div>
-
-                  {/* CTA mockup */}
-                  <div className="flex items-center gap-2.5 pt-1 opacity-90 pointer-events-none">
-                    <div className="bg-white text-neutral-950 text-xs font-semibold px-4 py-2 rounded-xl flex items-center gap-1.5 shadow">
-                      <ShoppingBag className="w-3.5 h-3.5" />
-                      <span>Add to Cart</span>
-                    </div>
-                    <div className="bg-neutral-800 text-neutral-200 text-xs font-semibold px-3 py-2 rounded-xl flex items-center gap-1.5">
-                      <MessageCircle className="w-3.5 h-3.5 text-emerald-400" />
-                      <span>WhatsApp Inquiry</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Right side: Product photo */}
-                <div className="lg:col-span-5 flex items-center justify-center p-4">
-                  <div className="relative w-full max-w-xs h-48 sm:h-56 flex items-center justify-center">
-                    <img
-                      src={previewSlide.image}
-                      alt={previewSlide.imageAlt || previewSlide.modelName}
-                      onError={(e) => {
-                        e.currentTarget.src = '/images/placeholder-product.svg'
-                      }}
-                      className="max-h-48 sm:max-h-52 max-w-full object-contain drop-shadow-2xl"
-                    />
-                  </div>
-                </div>
-
-              </div>
-            </div>
-          )}
-
-          {/* Bottom Tabs selector to switch preview */}
-          <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="text-[11px] text-slate-400 font-medium mr-1">Previewing:</span>
-              {slides.map((s, idx) => (
-                <button
-                  key={s.id}
-                  onClick={() => setActivePreviewIndex(idx)}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
-                    idx === activePreviewIndex
-                      ? 'bg-cyan-500 text-slate-950 font-bold shadow-md shadow-cyan-500/20'
-                      : 'bg-slate-900 border border-slate-800 text-slate-300 hover:border-slate-700 hover:text-white'
-                  }`}
-                >
-                  <span>{s.shortLabel}</span>
-                  {!s.isActive && (
-                    <span className="w-1.5 h-1.5 rounded-full bg-amber-400" title="Inactive on storefront" />
-                  )}
-                </button>
-              ))}
-            </div>
-
-            <span className="text-[11px] text-slate-500">
-              Click tabs above to switch live preview
-            </span>
-          </div>
-        </div>
+        </section>
 
         {/* Slide List & Management Table */}
-        <div className="p-6 rounded-3xl border border-slate-800 bg-slate-950/70 shadow-2xl space-y-5">
-          <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-800">
+        <div className="p-6 rounded-3xl border border-slate-200 bg-white shadow-sm space-y-5">
+          <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-200">
             <div className="flex items-center gap-2.5">
-              <div className="p-2 rounded-xl bg-indigo-500/10 text-indigo-400">
+              <div className="p-2 rounded-xl bg-indigo-50 text-indigo-700">
                 <Layers className="w-4 h-4" />
               </div>
               <div>
-                <h3 className="text-sm font-bold text-white font-['Outfit']">
-                  Configured Carousel Slides ({slides.length})
+                <h3 className="text-sm font-bold text-slate-900 font-['Outfit']">
+                  Slides ({slides.length})
                 </h3>
-                <p className="text-[11px] text-slate-400">
-                  Reorder, modify content, update prices, or toggle visibility
+                <p className="text-[11px] text-slate-500">
+                  Use the arrows to reorder. Turn a slide off to hide it without deleting.
                 </p>
               </div>
             </div>
@@ -645,16 +496,16 @@ export const AdminHeroBanners: React.FC = () => {
                 onClick={() => setShowStockPicker(true)}
                 size="sm"
                 variant="outline"
-                className="text-xs gap-1.5 border-amber-600/60 bg-amber-950/30 text-amber-300 hover:bg-amber-900/40 hover:text-white"
+                className="text-xs gap-1.5 border-amber-600/60 bg-amber-50 text-amber-700 hover:bg-amber-50 hover:text-slate-900"
               >
-                <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-                <span>Select from Stocks</span>
+                <Sparkles className="w-3.5 h-3.5 text-amber-700" />
+                <span>Add from products</span>
               </Button>
               <Button
                 onClick={handleAddNew}
                 size="sm"
                 variant="outline"
-                className="text-xs gap-1.5 border-slate-700 bg-slate-900 text-slate-200 hover:bg-slate-800 hover:text-white"
+                className="text-xs gap-1.5 border-slate-300 bg-slate-50 text-slate-800 hover:bg-slate-100 hover:text-slate-900"
               >
                 <Plus className="w-3.5 h-3.5" />
                 <span>Add New Slide</span>
@@ -672,8 +523,7 @@ export const AdminHeroBanners: React.FC = () => {
                   key={slide.id}
                   className={`p-4 rounded-2xl border transition-all ${
                     slide.isActive !== false
-                      ? 'bg-slate-900/60 border-slate-800/90 hover:border-slate-700'
-                      : 'bg-slate-950/40 border-slate-800/40 opacity-60'
+                      ? 'bg-slate-50 border-slate-200/90 hover:border-slate-300' : 'bg-white border-slate-200/40 opacity-60'
                   }`}
                 >
                   <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -681,12 +531,12 @@ export const AdminHeroBanners: React.FC = () => {
                     {/* Thumbnail & Identity */}
                     <div className="flex items-center gap-3.5">
                       {/* Order position */}
-                      <div className="w-7 h-7 rounded-lg bg-slate-800 flex items-center justify-center text-xs font-mono font-bold text-slate-300 shrink-0">
+                      <div className="w-7 h-7 rounded-lg bg-slate-100 flex items-center justify-center text-xs font-mono font-bold text-slate-700 shrink-0">
                         #{index + 1}
                       </div>
 
                       {/* Thumbnail photo */}
-                      <div className="w-14 h-14 rounded-xl bg-black/40 border border-slate-800 flex items-center justify-center p-1.5 shrink-0 overflow-hidden">
+                      <div className="w-14 h-14 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-center p-1.5 shrink-0 overflow-hidden">
                         <img
                           src={slide.image}
                           alt={slide.shortLabel}
@@ -700,29 +550,29 @@ export const AdminHeroBanners: React.FC = () => {
                       {/* Titles & Specs */}
                       <div className="space-y-1">
                         <div className="flex items-center gap-2">
-                          <span className="font-bold text-sm text-white font-['Outfit']">
+                          <span className="font-bold text-sm text-slate-900 font-['Outfit']">
                             {slide.modelName}
                           </span>
-                          <span className="text-[10px] bg-slate-800 text-slate-300 font-mono px-2 py-0.5 rounded">
+                          <span className="text-[10px] bg-slate-100 text-slate-700 font-mono px-2 py-0.5 rounded">
                             Tab: {slide.shortLabel}
                           </span>
                           {slide.isActive !== false ? (
-                            <Badge className="bg-emerald-950/80 border-emerald-800 text-emerald-400 text-[9px] px-1.5 py-0">
+                            <Badge className="bg-emerald-50 border-emerald-200 text-emerald-700 text-[9px] px-1.5 py-0">
                               Active
                             </Badge>
                           ) : (
-                            <Badge className="bg-slate-800 border-slate-700 text-slate-400 text-[9px] px-1.5 py-0">
+                            <Badge className="bg-slate-100 border-slate-300 text-slate-500 text-[9px] px-1.5 py-0">
                               Hidden
                             </Badge>
                           )}
                         </div>
 
-                        <p className="text-xs text-slate-400 line-clamp-1 max-w-xl">
+                        <p className="text-xs text-slate-500 line-clamp-1 max-w-xl">
                           {slide.description}
                         </p>
 
                         <div className="flex flex-wrap items-center gap-2 text-[11px] pt-0.5">
-                          <span className="font-bold text-cyan-400">
+                          <span className="font-bold text-cyan-700">
                             {formatINR(slide.fallbackPrice)}
                           </span>
                           {slide.fallbackOriginalPrice > slide.fallbackPrice && (
@@ -730,8 +580,8 @@ export const AdminHeroBanners: React.FC = () => {
                               {formatINR(slide.fallbackOriginalPrice)}
                             </span>
                           )}
-                          <span className="text-slate-600">•</span>
-                          <span className="text-slate-400">
+                          <span className="text-slate-400">•</span>
+                          <span className="text-slate-500">
                             {(slide.specs || []).join(' | ')}
                           </span>
                         </div>
@@ -742,11 +592,11 @@ export const AdminHeroBanners: React.FC = () => {
                     <div className="flex items-center gap-2 self-end md:self-auto shrink-0">
                       
                       {/* Reorder Up / Down */}
-                      <div className="flex items-center border border-slate-800 rounded-xl bg-slate-950 p-0.5">
+                      <div className="flex items-center border border-slate-200 rounded-xl bg-white p-0.5">
                         <button
                           onClick={() => moveSlide(slide.id, 'up')}
                           disabled={isFirst}
-                          className="p-1.5 text-slate-400 hover:text-white disabled:opacity-30 disabled:hover:text-slate-400 transition-colors"
+                          className="p-1.5 text-slate-500 hover:text-slate-900 disabled:opacity-30 disabled:hover:text-slate-500 transition-colors"
                           title="Move Slide Up"
                         >
                           <ArrowUp className="w-3.5 h-3.5" />
@@ -754,7 +604,7 @@ export const AdminHeroBanners: React.FC = () => {
                         <button
                           onClick={() => moveSlide(slide.id, 'down')}
                           disabled={isLast}
-                          className="p-1.5 text-slate-400 hover:text-white disabled:opacity-30 disabled:hover:text-slate-400 transition-colors"
+                          className="p-1.5 text-slate-500 hover:text-slate-900 disabled:opacity-30 disabled:hover:text-slate-500 transition-colors"
                           title="Move Slide Down"
                         >
                           <ArrowDown className="w-3.5 h-3.5" />
@@ -768,8 +618,7 @@ export const AdminHeroBanners: React.FC = () => {
                         size="sm"
                         className={`text-xs h-8 px-2.5 ${
                           slide.isActive !== false
-                            ? 'text-emerald-400 hover:text-emerald-300'
-                            : 'text-slate-400 hover:text-slate-300'
+                            ? 'text-emerald-700 hover:text-emerald-700' : 'text-slate-500 hover:text-slate-700'
                         }`}
                         title="Toggle visibility on storefront"
                       >
@@ -780,7 +629,7 @@ export const AdminHeroBanners: React.FC = () => {
                       <Button
                         onClick={() => handleEdit(slide)}
                         size="sm"
-                        className="text-xs h-8 gap-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700/80"
+                        className="text-xs h-8 gap-1.5 bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-300/80"
                       >
                         <Edit3 className="w-3.5 h-3.5" />
                         <span>Edit</span>
@@ -791,7 +640,7 @@ export const AdminHeroBanners: React.FC = () => {
                         onClick={() => handleDelete(slide.id, slide.shortLabel)}
                         variant="ghost"
                         size="sm"
-                        className="text-xs h-8 px-2 text-rose-400 hover:text-rose-300 hover:bg-rose-950/40"
+                        className="text-xs h-8 px-2 text-rose-700 hover:text-rose-700 hover:bg-rose-50"
                         title="Delete Slide"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
@@ -811,25 +660,25 @@ export const AdminHeroBanners: React.FC = () => {
       {/* Slide Editor Modal */}
       <AnimatePresence>
         {editingSlide && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm overflow-y-auto">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-50 backdrop-blur-sm overflow-y-auto">
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 10 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 10 }}
-              className="w-full max-w-2xl bg-slate-950 border border-slate-800 rounded-3xl p-6 sm:p-7 shadow-2xl space-y-6 my-8 text-slate-100"
+              className="w-full max-w-2xl bg-white border border-slate-200 rounded-3xl p-6 sm:p-7 shadow-sm space-y-6 my-8 text-slate-900"
             >
               
               {/* Modal Header */}
-              <div className="flex items-center justify-between pb-4 border-b border-slate-800">
+              <div className="flex items-center justify-between pb-4 border-b border-slate-200">
                 <div className="flex items-center gap-3">
-                  <div className="p-2.5 rounded-2xl bg-cyan-500/10 text-cyan-400">
+                  <div className="p-2.5 rounded-2xl bg-cyan-50 text-cyan-700">
                     <Sparkles className="w-5 h-5" />
                   </div>
                   <div>
-                    <h3 className="text-base font-bold text-white font-['Outfit']">
+                    <h3 className="text-base font-bold text-slate-900 font-['Outfit']">
                       {isCreatingNew ? 'Create New Showcase Banner' : 'Edit Showcase Banner'}
                     </h3>
-                    <p className="text-xs text-slate-400">
+                    <p className="text-xs text-slate-500">
                       Update banner display text, showroom pricing, image, and spec highlights
                     </p>
                   </div>
@@ -837,7 +686,7 @@ export const AdminHeroBanners: React.FC = () => {
 
                 <button
                   onClick={() => setEditingSlide(null)}
-                  className="p-1.5 text-slate-400 hover:text-white rounded-xl hover:bg-slate-900"
+                  className="p-1.5 text-slate-500 hover:text-slate-900 rounded-xl hover:bg-slate-50"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -848,9 +697,9 @@ export const AdminHeroBanners: React.FC = () => {
                 
                 {/* Quick Auto-fill from Catalog */}
                 {catalogProducts.length > 0 && (
-                  <div className="p-3.5 rounded-2xl bg-slate-900/80 border border-slate-800 space-y-2">
+                  <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
                     <div className="flex items-center justify-between">
-                      <label className="text-[11px] font-semibold text-cyan-400 flex items-center gap-1.5">
+                      <label className="text-[11px] font-semibold text-cyan-700 flex items-center gap-1.5">
                         <Tag className="w-3.5 h-3.5" />
                         Select Product from Stock:
                       </label>
@@ -860,7 +709,7 @@ export const AdminHeroBanners: React.FC = () => {
                           setShowStockPicker(true)
                           setEditingSlide(null)
                         }}
-                        className="text-[11px] text-amber-400 hover:underline flex items-center gap-1 font-semibold"
+                        className="text-[11px] text-amber-700 hover:underline flex items-center gap-1 font-semibold"
                       >
                         <Sparkles className="w-3 h-3" /> Browse Visual Stock Picker →
                       </button>
@@ -868,7 +717,7 @@ export const AdminHeroBanners: React.FC = () => {
                     <select
                       onChange={(e) => handleSelectCatalogProduct(e.target.value)}
                       value={form.productId || ''}
-                      className="w-full text-xs bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:border-cyan-500 cursor-pointer"
+                      className="w-full text-xs bg-white border border-slate-200 rounded-xl px-3 py-2 text-slate-800 focus:outline-none focus:border-cyan-500 cursor-pointer"
                     >
                       <option value="" disabled>Select a stock model to pre-fill all details...</option>
                       {catalogProducts.map((p) => (
@@ -883,8 +732,8 @@ export const AdminHeroBanners: React.FC = () => {
                 {/* Model Title & Tab Pill */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-slate-300">
-                      Main Headline / Model Name <span className="text-rose-400">*</span>
+                    <label className="text-xs font-semibold text-slate-700">
+                      Main Headline / Model Name <span className="text-rose-700">*</span>
                     </label>
                     <input
                       type="text"
@@ -892,7 +741,7 @@ export const AdminHeroBanners: React.FC = () => {
                       value={form.modelName}
                       onChange={(e) => setForm({ ...form, modelName: e.target.value })}
                       placeholder="e.g. LG 9 Kg AI Direct Drive Washer"
-                      className="w-full text-xs bg-slate-900 border border-slate-800 rounded-xl px-3.5 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500"
+                      className="w-full text-xs bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-slate-900 placeholder-slate-500 focus:outline-none focus:border-cyan-500"
                     />
                     <p className="text-[10px] text-slate-500">
                       Large dominant title shown on the left of the banner
@@ -900,8 +749,8 @@ export const AdminHeroBanners: React.FC = () => {
                   </div>
 
                   <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-slate-300">
-                      Carousel Tab Button Label <span className="text-rose-400">*</span>
+                    <label className="text-xs font-semibold text-slate-700">
+                      Carousel Tab Button Label <span className="text-rose-700">*</span>
                     </label>
                     <input
                       type="text"
@@ -909,7 +758,7 @@ export const AdminHeroBanners: React.FC = () => {
                       value={form.shortLabel}
                       onChange={(e) => setForm({ ...form, shortLabel: e.target.value })}
                       placeholder="e.g. LG AI Washer"
-                      className="w-full text-xs bg-slate-900 border border-slate-800 rounded-xl px-3.5 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500"
+                      className="w-full text-xs bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-slate-900 placeholder-slate-500 focus:outline-none focus:border-cyan-500"
                     />
                     <p className="text-[10px] text-slate-500">
                       Pill button text at bottom (e.g. iPhone 16 Pro, LG AI Washer)
@@ -919,7 +768,7 @@ export const AdminHeroBanners: React.FC = () => {
 
                 {/* Narrative Description */}
                 <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-slate-300">
+                  <label className="text-xs font-semibold text-slate-700">
                     Showroom Narrative Description
                   </label>
                   <textarea
@@ -927,16 +776,16 @@ export const AdminHeroBanners: React.FC = () => {
                     value={form.description}
                     onChange={(e) => setForm({ ...form, description: e.target.value })}
                     placeholder="Highlight motor warranty, AI features, genuine unboxing, or festive delivery..."
-                    className="w-full text-xs bg-slate-900 border border-slate-800 rounded-xl p-3 text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500 resize-none leading-relaxed"
+                    className="w-full text-xs bg-slate-50 border border-slate-200 rounded-xl p-3 text-slate-900 placeholder-slate-500 focus:outline-none focus:border-cyan-500 resize-none leading-relaxed"
                   />
                 </div>
 
                 {/* Pricing Fields */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 rounded-2xl bg-slate-900/50 border border-slate-800">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 rounded-2xl bg-slate-50 border border-slate-200">
                   <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-slate-300 flex items-center justify-between">
+                    <label className="text-xs font-semibold text-slate-700 flex items-center justify-between">
                       <span>Showroom Offer Price (₹)</span>
-                      <span className="text-[10px] text-emerald-400 font-normal">Active Selling Price</span>
+                      <span className="text-[10px] text-emerald-700 font-normal">Active Selling Price</span>
                     </label>
                     <input
                       type="number"
@@ -944,14 +793,14 @@ export const AdminHeroBanners: React.FC = () => {
                       value={form.fallbackPrice || ''}
                       onChange={(e) => setForm({ ...form, fallbackPrice: Number(e.target.value) })}
                       placeholder="e.g. 18499"
-                      className="w-full text-sm font-bold bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500"
+                      className="w-full text-sm font-bold bg-white border border-slate-200 rounded-xl px-3.5 py-2 text-slate-900 placeholder-slate-500 focus:outline-none focus:border-cyan-500"
                     />
                   </div>
 
                   <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-slate-300 flex items-center justify-between">
+                    <label className="text-xs font-semibold text-slate-700 flex items-center justify-between">
                       <span>MRP / Comparison Price (₹)</span>
-                      <span className="text-[10px] text-slate-400 font-normal">Strikethrough Price</span>
+                      <span className="text-[10px] text-slate-500 font-normal">Strikethrough Price</span>
                     </label>
                     <input
                       type="number"
@@ -959,14 +808,14 @@ export const AdminHeroBanners: React.FC = () => {
                       value={form.fallbackOriginalPrice || ''}
                       onChange={(e) => setForm({ ...form, fallbackOriginalPrice: Number(e.target.value) })}
                       placeholder="e.g. 46990"
-                      className="w-full text-sm font-bold bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500"
+                      className="w-full text-sm font-bold bg-white border border-slate-200 rounded-xl px-3.5 py-2 text-slate-900 placeholder-slate-500 focus:outline-none focus:border-cyan-500"
                     />
                   </div>
 
                   {/* Calculated savings info */}
                   {form.fallbackOriginalPrice > form.fallbackPrice && form.fallbackPrice > 0 && (
-                    <div className="sm:col-span-2 flex items-center justify-between text-xs text-slate-400 bg-slate-950/60 p-2.5 rounded-xl border border-slate-800">
-                      <span className="text-emerald-400 font-bold">
+                    <div className="sm:col-span-2 flex items-center justify-between text-xs text-slate-500 bg-white p-2.5 rounded-xl border border-slate-200">
+                      <span className="text-emerald-700 font-bold">
                         Calculated Discount: {Math.round(((form.fallbackOriginalPrice - form.fallbackPrice) / form.fallbackOriginalPrice) * 100)}% Off (Save {formatINR(form.fallbackOriginalPrice - form.fallbackPrice)})
                       </span>
                     </div>
@@ -976,13 +825,13 @@ export const AdminHeroBanners: React.FC = () => {
                 {/* Product Photography & Preset Picker */}
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <label className="text-xs font-semibold text-slate-300">
+                    <label className="text-xs font-semibold text-slate-700">
                       Showroom Product Image
                     </label>
                     <button
                       type="button"
                       onClick={() => setShowImagePicker(!showImagePicker)}
-                      className="text-xs text-cyan-400 hover:text-cyan-300 font-medium flex items-center gap-1 cursor-pointer"
+                      className="text-xs text-cyan-700 hover:text-cyan-700 font-medium flex items-center gap-1 cursor-pointer"
                     >
                       <ImageIcon className="w-3.5 h-3.5" />
                       <span>{showImagePicker ? 'Close Gallery' : 'Pick from Showroom Photos'}</span>
@@ -990,7 +839,7 @@ export const AdminHeroBanners: React.FC = () => {
                   </div>
 
                   <div className="flex items-center gap-3">
-                    <div className="w-14 h-14 rounded-xl bg-slate-900 border border-slate-800 p-1 flex items-center justify-center shrink-0 overflow-hidden">
+                    <div className="w-14 h-14 rounded-xl bg-slate-50 border border-slate-200 p-1 flex items-center justify-center shrink-0 overflow-hidden">
                       <img
                         src={form.image}
                         alt="Preview"
@@ -1005,14 +854,14 @@ export const AdminHeroBanners: React.FC = () => {
                       value={form.image}
                       onChange={(e) => setForm({ ...form, image: e.target.value })}
                       placeholder="e.g. /images/products/lg-washer.jpg or https://..."
-                      className="w-full text-xs bg-slate-900 border border-slate-800 rounded-xl px-3.5 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500"
+                      className="w-full text-xs bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-slate-900 placeholder-slate-500 focus:outline-none focus:border-cyan-500"
                     />
                   </div>
 
                   {/* Preset Photo Picker Gallery */}
                   {showImagePicker && (
-                    <div className="p-3 bg-slate-900 rounded-2xl border border-slate-800 space-y-2 max-h-52 overflow-y-auto">
-                      <p className="text-[11px] text-slate-400">
+                    <div className="p-3 bg-slate-50 rounded-2xl border border-slate-200 space-y-2 max-h-52 overflow-y-auto">
+                      <p className="text-[11px] text-slate-500">
                         Click any verified showroom photo to use it for this banner:
                       </p>
                       <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
@@ -1026,8 +875,7 @@ export const AdminHeroBanners: React.FC = () => {
                             }}
                             className={`p-1.5 rounded-xl border flex flex-col items-center gap-1 transition-all text-center cursor-pointer ${
                               form.image === img.url
-                                ? 'bg-cyan-950/70 border-cyan-500 text-cyan-300'
-                                : 'bg-slate-950/80 border-slate-800 hover:border-slate-700 text-slate-300'
+                                ? 'bg-cyan-50 border-cyan-500 text-cyan-700' : 'bg-white border-slate-200 hover:border-slate-300 text-slate-700'
                             }`}
                           >
                             <img
@@ -1047,22 +895,22 @@ export const AdminHeroBanners: React.FC = () => {
 
                 {/* Key Spec Pills Management */}
                 <div className="space-y-2">
-                  <label className="text-xs font-semibold text-slate-300">
+                  <label className="text-xs font-semibold text-slate-700">
                     Key Spec Highlights (Pills on Banner)
                   </label>
                   
-                  <div className="flex flex-wrap items-center gap-1.5 min-h-[36px] p-2 bg-slate-900 border border-slate-800 rounded-xl">
+                  <div className="flex flex-wrap items-center gap-1.5 min-h-[36px] p-2 bg-slate-50 border border-slate-200 rounded-xl">
                     {form.specs.map((spec, i) => (
                       <span
                         key={i}
-                        className="text-xs bg-slate-800 text-slate-200 px-2.5 py-1 rounded-lg flex items-center gap-1.5"
+                        className="text-xs bg-slate-100 text-slate-800 px-2.5 py-1 rounded-lg flex items-center gap-1.5"
                       >
-                        <Check className="w-3 h-3 text-emerald-400" />
+                        <Check className="w-3 h-3 text-emerald-700" />
                         <span>{spec}</span>
                         <button
                           type="button"
                           onClick={() => handleRemoveSpecTag(i)}
-                          className="hover:text-rose-400 p-0.5 rounded"
+                          className="hover:text-rose-700 p-0.5 rounded"
                         >
                           <X className="w-3 h-3" />
                         </button>
@@ -1081,12 +929,12 @@ export const AdminHeroBanners: React.FC = () => {
                           }
                         }}
                         placeholder="+ Type spec & press Enter..."
-                        className="text-xs bg-transparent border-0 text-slate-200 placeholder-slate-500 focus:outline-none w-full"
+                        className="text-xs bg-transparent border-0 text-slate-800 placeholder-slate-500 focus:outline-none w-full"
                       />
                       <button
                         type="button"
                         onClick={handleAddSpecTag}
-                        className="text-xs px-2 py-0.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded font-bold cursor-pointer"
+                        className="text-xs px-2 py-0.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded font-bold cursor-pointer"
                       >
                         Add
                       </button>
@@ -1100,7 +948,7 @@ export const AdminHeroBanners: React.FC = () => {
                 {/* Additional Badges & Status */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-slate-300">
+                    <label className="text-xs font-semibold text-slate-700">
                       Brand / Category Tag
                     </label>
                     <input
@@ -1108,12 +956,12 @@ export const AdminHeroBanners: React.FC = () => {
                       value={form.brandTag}
                       onChange={(e) => setForm({ ...form, brandTag: e.target.value })}
                       placeholder="e.g. LG Smart Living Appliances"
-                      className="w-full text-xs bg-slate-900 border border-slate-800 rounded-xl px-3.5 py-2 text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500"
+                      className="w-full text-xs bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-slate-900 placeholder-slate-500 focus:outline-none focus:border-cyan-500"
                     />
                   </div>
 
                   <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-slate-300">
+                    <label className="text-xs font-semibold text-slate-700">
                       Trust Badge Text
                     </label>
                     <input
@@ -1121,16 +969,16 @@ export const AdminHeroBanners: React.FC = () => {
                       value={form.badgeText}
                       onChange={(e) => setForm({ ...form, badgeText: e.target.value })}
                       placeholder="e.g. 10-Yr Motor Warranty"
-                      className="w-full text-xs bg-slate-900 border border-slate-800 rounded-xl px-3.5 py-2 text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500"
+                      className="w-full text-xs bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-slate-900 placeholder-slate-500 focus:outline-none focus:border-cyan-500"
                     />
                   </div>
                 </div>
 
                 {/* Visibility Toggle */}
-                <div className="flex items-center justify-between p-3.5 rounded-2xl bg-slate-900/60 border border-slate-800">
+                <div className="flex items-center justify-between p-3.5 rounded-2xl bg-slate-50 border border-slate-200">
                   <div>
-                    <p className="text-xs font-semibold text-white">Active on Storefront</p>
-                    <p className="text-[10px] text-slate-400">
+                    <p className="text-xs font-semibold text-slate-900">Active on Storefront</p>
+                    <p className="text-[10px] text-slate-500">
                       When enabled, this slide is displayed in the homepage carousel
                     </p>
                   </div>
@@ -1141,23 +989,23 @@ export const AdminHeroBanners: React.FC = () => {
                       onChange={(e) => setForm({ ...form, isActive: e.target.checked })}
                       className="sr-only peer"
                     />
-                    <div className="w-10 h-5 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-cyan-500"></div>
+                    <div className="w-10 h-5 bg-slate-100 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-cyan-500"></div>
                   </label>
                 </div>
 
                 {/* Submit & Cancel Buttons */}
-                <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-800">
+                <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-200">
                   <Button
                     type="button"
                     variant="outline"
                     onClick={() => setEditingSlide(null)}
-                    className="text-xs border-slate-700 bg-slate-900 text-slate-300 hover:bg-slate-800"
+                    className="text-xs border-slate-300 bg-slate-50 text-slate-700 hover:bg-slate-100"
                   >
                     Cancel
                   </Button>
                   <Button
                     type="submit"
-                    className="text-xs font-bold gap-1.5 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 shadow-lg shadow-cyan-500/20 cursor-pointer"
+                    className="text-xs font-bold gap-1.5 bg-slate-900 hover:bg-slate-800 text-white shadow-lg cursor-pointer"
                   >
                     <Check className="w-4 h-4" />
                     <span>Save Slide Changes</span>
@@ -1174,21 +1022,21 @@ export const AdminHeroBanners: React.FC = () => {
       {/* Confirmation Modal for Resetting to Defaults */}
       <AnimatePresence>
         {showResetConfirm && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-50 backdrop-blur-sm">
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="w-full max-w-md bg-slate-950 border border-slate-800 rounded-2xl p-6 shadow-2xl space-y-4"
+              className="w-full max-w-md bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-4"
             >
-              <div className="flex items-center gap-3 text-amber-400">
+              <div className="flex items-center gap-3 text-amber-700">
                 <AlertCircle className="w-6 h-6" />
-                <h3 className="text-base font-bold text-white font-['Outfit']">
+                <h3 className="text-base font-bold text-slate-900 font-['Outfit']">
                   Restore Showroom Defaults?
                 </h3>
               </div>
 
-              <p className="text-xs text-slate-300 leading-relaxed">
+              <p className="text-xs text-slate-700 leading-relaxed">
                 This will reset your homepage banner to the 4 official flagship showroom models (iPhone 16 Pro, Sony BRAVIA OLED, Galaxy S24 Ultra, and LG AI Washer). Any custom slides will be replaced.
               </p>
 
@@ -1197,7 +1045,7 @@ export const AdminHeroBanners: React.FC = () => {
                   variant="outline"
                   size="sm"
                   onClick={() => setShowResetConfirm(false)}
-                  className="text-xs border-slate-700 bg-slate-900 text-slate-300"
+                  className="text-xs border-slate-300 bg-slate-50 text-slate-700"
                 >
                   Cancel
                 </Button>
@@ -1217,24 +1065,24 @@ export const AdminHeroBanners: React.FC = () => {
       {/* Select Stock for Hero Banner Modal */}
       <AnimatePresence>
         {showStockPicker && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/80 backdrop-blur-md overflow-y-auto">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-slate-50 backdrop-blur-md overflow-y-auto">
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 15 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 15 }}
-              className="w-full max-w-4xl bg-slate-950 border border-slate-800 rounded-3xl p-5 sm:p-7 shadow-2xl flex flex-col max-h-[90vh] text-slate-100 my-auto"
+              className="w-full max-w-4xl bg-white border border-slate-200 rounded-3xl p-5 sm:p-7 shadow-sm flex flex-col max-h-[90vh] text-slate-900 my-auto"
             >
               {/* Header */}
-              <div className="flex items-center justify-between pb-4 border-b border-slate-800 shrink-0">
+              <div className="flex items-center justify-between pb-4 border-b border-slate-200 shrink-0">
                 <div className="flex items-center gap-3">
-                  <div className="p-2.5 rounded-2xl bg-amber-500/10 text-amber-400">
+                  <div className="p-2.5 rounded-2xl bg-amber-50 text-amber-700">
                     <Sparkles className="w-5 h-5" />
                   </div>
                   <div>
-                    <h3 className="text-base font-bold text-white font-['Outfit']">
+                    <h3 className="text-base font-bold text-slate-900 font-['Outfit']">
                       Select Stock Model for Hero Banner
                     </h3>
-                    <p className="text-xs text-slate-400">
+                    <p className="text-xs text-slate-500">
                       Pick any item from your live inventory to showcase on the homepage flagship carousel.
                     </p>
                   </div>
@@ -1242,36 +1090,36 @@ export const AdminHeroBanners: React.FC = () => {
 
                 <button
                   onClick={() => setShowStockPicker(false)}
-                  className="p-1.5 text-slate-400 hover:text-white rounded-xl hover:bg-slate-900 transition-colors"
+                  className="p-1.5 text-slate-500 hover:text-slate-900 rounded-xl hover:bg-slate-50 transition-colors"
                 >
                   <X className="w-5 h-5" />
                 </button>
               </div>
 
               {/* Search & Filters */}
-              <div className="py-4 space-y-3 shrink-0 border-b border-slate-800/80">
+              <div className="py-4 space-y-3 shrink-0 border-b border-slate-200/80">
                 <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between">
                   {/* Search Bar */}
                   <div className="relative flex-1">
-                    <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                    <Search className="w-4 h-4 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
                     <input
                       type="text"
                       value={stockSearchQuery}
                       onChange={(e) => setStockSearchQuery(e.target.value)}
                       placeholder="Search stock by product name, brand, SKU..."
-                      className="w-full pl-10 pr-4 py-2 text-xs bg-slate-900 border border-slate-800 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 transition-all"
+                      className="w-full pl-10 pr-4 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-500 focus:outline-none focus:border-amber-500 transition-all"
                     />
                     {stockSearchQuery && (
                       <button
                         onClick={() => setStockSearchQuery('')}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white text-xs"
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-900 text-xs"
                       >
                         <X className="w-3.5 h-3.5" />
                       </button>
                     )}
                   </div>
 
-                  <Badge variant="outline" className="border-slate-800 text-slate-400 text-xs self-start sm:self-center shrink-0">
+                  <Badge variant="outline" className="border-slate-200 text-slate-500 text-xs self-start sm:self-center shrink-0">
                     {filteredStock.length} Products Found
                   </Badge>
                 </div>
@@ -1285,8 +1133,7 @@ export const AdminHeroBanners: React.FC = () => {
                       onClick={() => setStockCategoryFilter(cat.id)}
                       className={`px-3 py-1 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
                         stockCategoryFilter === cat.id
-                          ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20'
-                          : 'bg-slate-900 text-slate-400 hover:text-white border border-slate-800'
+                          ? 'bg-amber-500 text-slate-950 shadow-md ' : 'bg-slate-50 text-slate-500 hover:text-slate-900 border border-slate-200'
                       }`}
                     >
                       {cat.label}
@@ -1299,21 +1146,21 @@ export const AdminHeroBanners: React.FC = () => {
               <div className="overflow-y-auto flex-1 py-4 pr-1 space-y-3">
                 {catalogProducts.length === 0 ? (
                   <div className="py-16 text-center space-y-3">
-                    <div className="w-12 h-12 rounded-2xl bg-slate-900 text-slate-500 flex items-center justify-center mx-auto">
+                    <div className="w-12 h-12 rounded-2xl bg-slate-50 text-slate-500 flex items-center justify-center mx-auto">
                       <Package className="w-6 h-6" />
                     </div>
-                    <p className="text-sm font-bold text-white">No products found in inventory</p>
-                    <p className="text-xs text-slate-400 max-w-sm mx-auto">
+                    <p className="text-sm font-bold text-slate-900">No products found in inventory</p>
+                    <p className="text-xs text-slate-500 max-w-sm mx-auto">
                       Your showroom stock is currently empty. Add products with photos in the Product Catalog first to feature them here.
                     </p>
                     <Link to="/admin/products" onClick={() => setShowStockPicker(false)}>
-                      <Button size="sm" className="mt-2 bg-gradient-to-r from-cyan-500 to-blue-600 text-white text-xs">
+                      <Button size="sm" className="mt-2 bg-slate-900 hover:bg-slate-800 text-white text-xs">
                         Go to Product Catalog & Add Stock →
                       </Button>
                     </Link>
                   </div>
                 ) : filteredStock.length === 0 ? (
-                  <div className="py-12 text-center text-slate-400 text-xs">
+                  <div className="py-12 text-center text-slate-500 text-xs">
                     No products matched your search or category filter.
                   </div>
                 ) : (
@@ -1324,13 +1171,12 @@ export const AdminHeroBanners: React.FC = () => {
                         key={prod.id}
                         className={`p-3.5 sm:p-4 rounded-2xl border transition-all flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3.5 ${
                           alreadyFeatured
-                            ? 'bg-amber-950/20 border-amber-900/40 hover:border-amber-800/60'
-                            : 'bg-slate-900/60 border-slate-800/80 hover:border-slate-700'
+                            ? 'bg-amber-50 border-amber-200 hover:border-amber-200' : 'bg-slate-50 border-slate-200/80 hover:border-slate-300'
                         }`}
                       >
                         {/* Info */}
                         <div className="flex items-center gap-3.5 min-w-0">
-                          <div className="w-14 h-14 rounded-xl bg-black/40 border border-slate-800 flex items-center justify-center p-1.5 shrink-0 overflow-hidden">
+                          <div className="w-14 h-14 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-center p-1.5 shrink-0 overflow-hidden">
                             <img
                               src={prod.image || '/images/placeholder-product.svg'}
                               alt={prod.name}
@@ -1343,25 +1189,25 @@ export const AdminHeroBanners: React.FC = () => {
 
                           <div className="space-y-1 min-w-0">
                             <div className="flex flex-wrap items-center gap-2">
-                              <span className="font-bold text-sm text-white font-['Outfit'] truncate">
+                              <span className="font-bold text-sm text-slate-900 font-['Outfit'] truncate">
                                 {prod.name}
                               </span>
-                              <span className="text-[10px] font-mono text-cyan-400 bg-cyan-950/50 border border-cyan-900/50 px-1.5 py-0.5 rounded">
+                              <span className="text-[10px] font-mono text-cyan-700 bg-cyan-50 border border-cyan-200 px-1.5 py-0.5 rounded">
                                 {prod.brand}
                               </span>
                               {alreadyFeatured && (
-                                <span className="text-[10px] font-bold text-amber-300 bg-amber-950 border border-amber-800 px-2 py-0.5 rounded-full flex items-center gap-1">
+                                <span className="text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full flex items-center gap-1">
                                   ★ Active on Hero
                                 </span>
                               )}
                             </div>
 
-                            <p className="text-xs text-slate-400 line-clamp-1">
+                            <p className="text-xs text-slate-500 line-clamp-1">
                               {prod.tagline || prod.description || 'Showroom certified model'}
                             </p>
 
                             <div className="flex items-center gap-3 text-xs pt-0.5">
-                              <span className="font-bold text-white">
+                              <span className="font-bold text-slate-900">
                                 {formatINR(prod.price)}
                               </span>
                               {prod.originalPrice > prod.price && (
@@ -1370,7 +1216,7 @@ export const AdminHeroBanners: React.FC = () => {
                                 </span>
                               )}
                               <span className="text-slate-500">•</span>
-                              <span className="text-[11px] text-emerald-400 font-medium">
+                              <span className="text-[11px] text-emerald-700 font-medium">
                                 Stock: {prod.stockQuantity ?? 1} units
                               </span>
                             </div>
@@ -1384,9 +1230,9 @@ export const AdminHeroBanners: React.FC = () => {
                             size="sm"
                             variant="outline"
                             onClick={() => handleCustomizeStockItem(prod)}
-                            className="text-xs border-slate-700 bg-slate-900 text-slate-300 hover:bg-slate-800 hover:text-white"
+                            className="text-xs border-slate-300 bg-slate-50 text-slate-700 hover:bg-slate-100 hover:text-slate-900"
                           >
-                            <Edit3 className="w-3.5 h-3.5 text-cyan-400" />
+                            <Edit3 className="w-3.5 h-3.5 text-cyan-700" />
                             <span>Customize Details</span>
                           </Button>
 
@@ -1394,7 +1240,7 @@ export const AdminHeroBanners: React.FC = () => {
                             type="button"
                             size="sm"
                             onClick={() => handleFeatureStockItem(prod)}
-                            className="text-xs font-bold gap-1.5 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 shadow-md shadow-amber-500/20"
+                            className="text-xs font-bold gap-1.5 bg-slate-900 hover:bg-slate-800 text-white shadow-md "
                           >
                             <Sparkles className="w-3.5 h-3.5" />
                             <span>{alreadyFeatured ? 'Re-add to Hero' : 'Feature in Hero'}</span>
@@ -1407,13 +1253,13 @@ export const AdminHeroBanners: React.FC = () => {
               </div>
 
               {/* Footer */}
-              <div className="pt-3 border-t border-slate-800 flex items-center justify-between text-xs text-slate-400 shrink-0">
+              <div className="pt-3 border-t border-slate-200 flex items-center justify-between text-xs text-slate-500 shrink-0">
                 <span>Select any product to instantly create a Hero Showcase Banner.</span>
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => setShowStockPicker(false)}
-                  className="text-xs border-slate-700 text-slate-300"
+                  className="text-xs border-slate-300 text-slate-700"
                 >
                   Done
                 </Button>

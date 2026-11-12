@@ -1,228 +1,165 @@
-import React, { useState, useEffect } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { AdminLayout } from '@/components/admin/AdminLayout'
 import { productService, PriceHistoryRecord } from '@/services/productService'
 import { formatINR } from '@/lib/utils'
-import { 
-  Tag, 
-  Package, 
-  Boxes, 
-  TrendingUp, 
-  ArrowRight, 
-  History, 
-  AlertTriangle,
-  Sparkles
-} from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { Package, PackageX, AlertTriangle, EyeOff, Plus, Image as ImageIcon, FileSpreadsheet, Loader2 } from 'lucide-react'
+
+type AdminRow = Awaited<ReturnType<typeof productService.fetchAllProductsAdmin>>['data'][number]
+
+const LOW_STOCK = 5
 
 export const AdminDashboard: React.FC = () => {
-  const [products, setProducts] = useState<any[]>([])
+  const [products, setProducts] = useState<AdminRow[]>([])
   const [history, setHistory] = useState<PriceHistoryRecord[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    const loadData = async () => {
-      setIsLoading(true)
-      const [prodRes, histRes] = await Promise.all([
-        productService.fetchAllProductsAdmin(),
-        productService.fetchPriceHistory(),
-      ])
-      setProducts(prodRes.data)
-      setHistory(histRes.data.slice(0, 5))
+    let alive = true
+    Promise.all([productService.fetchAllProductsAdmin(), productService.fetchPriceHistory()]).then(([p, h]) => {
+      if (!alive) return
+      setProducts(p.data || [])
+      setHistory(h.data || [])
+      setError(p.error)
       setIsLoading(false)
+    })
+    return () => {
+      alive = false
     }
-    loadData()
   }, [])
 
-  const totalProducts = products.length
-  const activeProducts = products.filter((p) => p.isActive).length
-  const outOfStock = products.filter((p) => !p.inStock || p.stockQuantity === 0).length
-  const lowStock = products.filter((p) => p.inStock && p.stockQuantity > 0 && p.stockQuantity <= 5).length
+  const stats = useMemo(() => {
+    const live = products.filter((p) => p.isActive)
+    const outOfStock = live.filter((p) => !p.inStock || p.stockQuantity <= 0)
+    const lowStock = live.filter((p) => p.inStock && p.stockQuantity > 0 && p.stockQuantity <= LOW_STOCK)
+    const hidden = products.filter((p) => !p.isActive)
+    return { live, outOfStock, lowStock, hidden }
+  }, [products])
+
+  const nameById = useMemo(() => new Map(products.map((p) => [p.id, p.name])), [products])
+
+  const cards = [
+    { label: 'Products on website', value: stats.live.length, icon: Package, tone: 'text-slate-900', href: '/admin/products' },
+    { label: 'Out of stock', value: stats.outOfStock.length, icon: PackageX, tone: 'text-rose-600', href: '/admin/products?filter=out' },
+    { label: `Low stock (${LOW_STOCK} or less)`, value: stats.lowStock.length, icon: AlertTriangle, tone: 'text-amber-600', href: '/admin/products?filter=low' },
+    { label: 'Hidden from website', value: stats.hidden.length, icon: EyeOff, tone: 'text-slate-500', href: '/admin/products?filter=hidden' },
+  ]
 
   return (
     <AdminLayout
-      title="Showroom Overview"
-      subtitle="Welcome back to Gayathri Communication Store Management."
+      title="Dashboard"
+      subtitle="Your showroom at a glance."
       actions={
-        <div className="flex items-center gap-2">
-          <Link to="/admin/banners">
-            <Button size="sm" variant="outline" className="gap-2 text-xs font-bold border-cyan-500/40 text-cyan-400 bg-slate-900 hover:bg-slate-800">
-              <Sparkles className="w-3.5 h-3.5" />
-              Hero Banners
-            </Button>
-          </Link>
-          <Link to="/admin/prices">
-            <Button size="sm" className="gap-2 text-xs font-bold bg-gradient-to-r from-cyan-500 to-blue-600 text-slate-950">
-              <Tag className="w-3.5 h-3.5" />
-              Manage Prices
-            </Button>
-          </Link>
-        </div>
+        <Link
+          to="/admin/products?add=1"
+          className="inline-flex h-10 items-center gap-2 rounded-lg bg-slate-900 px-4 text-sm font-semibold text-white hover:bg-slate-800"
+        >
+          <Plus className="h-4 w-4" aria-hidden="true" />
+          Add product
+        </Link>
       }
     >
-      <div className="space-y-8">
+      {error && (
+        <p className="mb-4 rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+          Could not load products: {error}
+        </p>
+      )}
 
-        {/* 4 Metric Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="p-5 rounded-2xl bg-slate-950/70 border border-slate-800 space-y-3">
-            <div className="flex items-center justify-between text-slate-400">
-              <span className="text-xs font-medium uppercase tracking-wider">Active Catalog</span>
-              <div className="p-2 rounded-xl bg-cyan-500/10 text-cyan-400">
-                <Package className="w-4 h-4" />
-              </div>
-            </div>
-            <div>
-              <p className="text-3xl font-extrabold text-white font-['Outfit']">
-                {activeProducts}
-              </p>
-              <p className="text-[11px] text-slate-400 mt-0.5">
-                Out of {totalProducts} total certified models
-              </p>
-            </div>
-          </div>
-
-          <div className="p-5 rounded-2xl bg-slate-950/70 border border-slate-800 space-y-3">
-            <div className="flex items-center justify-between text-slate-400">
-              <span className="text-xs font-medium uppercase tracking-wider">Price Updates</span>
-              <div className="p-2 rounded-xl bg-amber-500/10 text-amber-400">
-                <TrendingUp className="w-4 h-4" />
-              </div>
-            </div>
-            <div>
-              <p className="text-3xl font-extrabold text-white font-['Outfit']">
-                {history.length}
-              </p>
-              <p className="text-[11px] text-slate-400 mt-0.5">
-                Recorded in audit history
-              </p>
-            </div>
-          </div>
-
-          <div className="p-5 rounded-2xl bg-slate-950/70 border border-slate-800 space-y-3">
-            <div className="flex items-center justify-between text-slate-400">
-              <span className="text-xs font-medium uppercase tracking-wider">Low Stock Units</span>
-              <div className="p-2 rounded-xl bg-purple-500/10 text-purple-400">
-                <Boxes className="w-4 h-4" />
-              </div>
-            </div>
-            <div>
-              <p className="text-3xl font-extrabold text-white font-['Outfit']">
-                {lowStock}
-              </p>
-              <p className="text-[11px] text-slate-400 mt-0.5">
-                5 or fewer showroom units
-              </p>
-            </div>
-          </div>
-
-          <div className="p-5 rounded-2xl bg-slate-950/70 border border-slate-800 space-y-3">
-            <div className="flex items-center justify-between text-slate-400">
-              <span className="text-xs font-medium uppercase tracking-wider">Out of Stock</span>
-              <div className="p-2 rounded-xl bg-rose-500/10 text-rose-400">
-                <AlertTriangle className="w-4 h-4" />
-              </div>
-            </div>
-            <div>
-              <p className="text-3xl font-extrabold text-white font-['Outfit']">
-                {outOfStock}
-              </p>
-              <p className="text-[11px] text-slate-400 mt-0.5">
-                Unavailable for online booking
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* Quick Action Navigation Banners */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        {cards.map(({ label, value, icon: Icon, tone, href }) => (
           <Link
-            to="/admin/prices"
-            className="group p-6 rounded-3xl border border-cyan-500/30 bg-gradient-to-br from-slate-950/90 via-slate-900/60 to-cyan-950/30 hover:border-cyan-500/60 transition-all shadow-xl flex flex-col justify-between min-h-[160px]"
+            key={label}
+            to={href}
+            className="rounded-xl border border-slate-200 bg-white p-4 transition-colors hover:border-slate-300"
           >
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-[10px] font-bold text-cyan-400 uppercase tracking-wider bg-cyan-950/60 border border-cyan-800/50 px-2 py-0.5 rounded-md">
-                  Core Management Task
-                </span>
-                <ArrowRight className="w-4 h-4 text-cyan-400 group-hover:translate-x-1 transition-transform" />
-              </div>
-              <h3 className="text-xl font-bold text-white font-['Outfit'] group-hover:text-cyan-300 transition-colors">
-                Price Management Center
-              </h3>
-              <p className="text-xs text-slate-400 mt-1 max-w-sm">
-                Edit MRP and selling prices inline across any device with immediate storefront sync and audit history.
-              </p>
+            <div className="flex items-center justify-between text-slate-400">
+              <span className="text-xs font-medium text-slate-500">{label}</span>
+              <Icon className="h-4 w-4" aria-hidden="true" />
             </div>
-            <div className="pt-3 text-xs font-semibold text-cyan-400 flex items-center gap-1">
-              Launch Price Editor
-            </div>
+            <p className={`mt-2 font-['Outfit'] text-3xl font-bold tabular-nums ${tone}`}>
+              {isLoading ? <Loader2 className="h-6 w-6 animate-spin text-slate-300" /> : value}
+            </p>
           </Link>
-
-          <Link
-            to="/admin/products"
-            className="group p-6 rounded-3xl border border-slate-800 bg-slate-900/50 hover:border-slate-700 transition-all shadow-xl flex flex-col justify-between min-h-[160px]"
-          >
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider bg-slate-800 px-2 py-0.5 rounded-md">
-                  Catalog
-                </span>
-                <ArrowRight className="w-4 h-4 text-slate-400 group-hover:translate-x-1 transition-transform" />
-              </div>
-              <h3 className="text-xl font-bold text-white font-['Outfit']">
-                Product Catalog & Specs
-              </h3>
-              <p className="text-xs text-slate-400 mt-1 max-w-sm">
-                Review device specifications, brand authorizations, active statuses, and showroom details.
-              </p>
-            </div>
-            <div className="pt-3 text-xs font-semibold text-slate-300 flex items-center gap-1">
-              View Product List
-            </div>
-          </Link>
-        </div>
-
-        {/* Recent Price Updates Table */}
-        <div className="rounded-2xl border border-slate-800 bg-slate-950/80 p-6 space-y-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <History className="w-4 h-4 text-cyan-400" />
-              <h3 className="text-base font-bold text-white font-['Outfit']">
-                Recent Price Revisions
-              </h3>
-            </div>
-            <Link to="/admin/prices" className="text-xs text-cyan-400 hover:underline">
-              View All in Price Manager →
-            </Link>
-          </div>
-
-          {isLoading ? (
-            <p className="text-xs text-slate-500 py-6 text-center">Loading audit history...</p>
-          ) : history.length === 0 ? (
-            <div className="text-center py-8 text-slate-500 text-xs">
-              No recent price modifications recorded yet.
-            </div>
-          ) : (
-            <div className="divide-y divide-slate-800/60 text-xs">
-              {history.map((item) => (
-                <div key={item.id} className="py-3 flex items-center justify-between gap-4">
-                  <div>
-                    <span className="font-bold text-white font-mono">{item.productId}</span>
-                    <span className="text-[11px] text-slate-500 ml-2">
-                      {new Date(item.changedAt).toLocaleString()}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <span className="text-slate-500 line-through">{formatINR(item.oldSellingPrice)}</span>
-                    <span className="font-bold text-cyan-400">{formatINR(item.newSellingPrice)}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
+        ))}
       </div>
+
+      <div className="mt-6 grid gap-6 lg:grid-cols-3">
+        {/* Needs attention */}
+        <section className="rounded-xl border border-slate-200 bg-white lg:col-span-2">
+          <header className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
+            <h2 className="text-sm font-semibold">Needs attention</h2>
+            <Link to="/admin/products?filter=out" className="text-xs font-medium text-slate-500 hover:text-slate-900">
+              See all
+            </Link>
+          </header>
+          {isLoading ? (
+            <p className="px-4 py-8 text-center text-sm text-slate-400">Loading…</p>
+          ) : stats.outOfStock.length + stats.lowStock.length === 0 ? (
+            <p className="px-4 py-8 text-center text-sm text-slate-500">All products are in stock.</p>
+          ) : (
+            <ul className="divide-y divide-slate-100">
+              {[...stats.outOfStock, ...stats.lowStock].slice(0, 8).map((p) => {
+                const out = !p.inStock || p.stockQuantity <= 0
+                return (
+                  <li key={p.id} className="flex items-center gap-3 px-4 py-2.5">
+                    <img src={p.image} alt="" className="h-9 w-9 shrink-0 rounded-md bg-slate-50 object-contain" />
+                    <span className="min-w-0 flex-1 truncate text-sm">{p.name}</span>
+                    <span
+                      className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${
+                        out ? 'bg-rose-50 text-rose-700' : 'bg-amber-50 text-amber-700'
+                      }`}
+                    >
+                      {out ? 'Out of stock' : `${p.stockQuantity} left`}
+                    </span>
+                  </li>
+                )
+              })}
+            </ul>
+          )}
+        </section>
+
+        {/* Quick actions */}
+        <section className="rounded-xl border border-slate-200 bg-white">
+          <header className="border-b border-slate-100 px-4 py-3">
+            <h2 className="text-sm font-semibold">Quick actions</h2>
+          </header>
+          <div className="flex flex-col p-2">
+            {[
+              { to: '/admin/products?add=1', icon: Plus, label: 'Add a new product' },
+              { to: '/admin/products', icon: Package, label: 'Update prices or stock' },
+              { to: '/admin/banners', icon: ImageIcon, label: 'Change homepage banners' },
+              { to: '/admin/import', icon: FileSpreadsheet, label: 'Import stock from Excel' },
+            ].map(({ to, icon: Icon, label }) => (
+              <Link key={label} to={to} className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-slate-700 hover:bg-slate-50">
+                <Icon className="h-4 w-4 text-slate-400" aria-hidden="true" />
+                {label}
+              </Link>
+            ))}
+          </div>
+        </section>
+      </div>
+
+      {/* Recent price changes */}
+      {history.length > 0 && (
+        <section className="mt-6 rounded-xl border border-slate-200 bg-white">
+          <header className="border-b border-slate-100 px-4 py-3">
+            <h2 className="text-sm font-semibold">Recent price changes</h2>
+          </header>
+          <ul className="divide-y divide-slate-100">
+            {history.slice(0, 6).map((h) => (
+              <li key={h.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 px-4 py-2.5 text-sm">
+                <span className="min-w-0 flex-1 truncate">{nameById.get(h.productId) || h.productId}</span>
+                <span className="text-slate-400 line-through tabular-nums">{formatINR(h.oldSellingPrice)}</span>
+                <span className="font-semibold tabular-nums">{formatINR(h.newSellingPrice)}</span>
+                <span className="w-full text-xs text-slate-400 sm:w-auto">
+                  {new Date(h.changedAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
     </AdminLayout>
   )
 }

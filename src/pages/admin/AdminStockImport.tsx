@@ -79,46 +79,8 @@ export const AdminStockImport: React.FC = () => {
   }
 
   // 2. Load the project's client stock report directly
-  const handleLoadDefaultWorkbook = async () => {
-    setLoading(true)
-    setParsingError(null)
-    setExecutionReport(null)
-
-    try {
-      const res = await fetch('/product_List (1).xls')
-      if (!res.ok) {
-        throw new Error(`Could not automatically load product_List (1).xls (HTTP ${res.status}). Please use the file upload button above.`)
-      }
-      const buffer = await res.arrayBuffer()
-      const parsed = parseStockWorkbook(buffer, 'product_List (1).xls')
-      setSummary(parsed)
-    } catch (err: any) {
-      setParsingError(err?.message || 'Could not load default workbook. Please select and upload the file manually.')
-    } finally {
-      setLoading(false)
-    }
-  }
 
   // 2b. Load the client's Xiaomi / Redmi multi-variant spec sheet directly
-  const handleLoadClientXiaomiSheet = async () => {
-    setLoading(true)
-    setParsingError(null)
-    setExecutionReport(null)
-
-    try {
-      const res = await fetch('/Gayathri_Xiaomi_Redmi_Product_Entry_Sheet_with_Specs.xlsx')
-      if (!res.ok) {
-        throw new Error(`Could not load Gayathri_Xiaomi_Redmi_Product_Entry_Sheet_with_Specs.xlsx (HTTP ${res.status}). Please use the file upload button above.`)
-      }
-      const buffer = await res.arrayBuffer()
-      const parsed = parseStockWorkbook(buffer, 'Gayathri_Xiaomi_Redmi_Product_Entry_Sheet_with_Specs.xlsx')
-      setSummary(parsed)
-    } catch (err: any) {
-      setParsingError(err?.message || 'Could not load Xiaomi / Redmi sheet. Please select and upload the file manually.')
-    } finally {
-      setLoading(false)
-    }
-  }
 
   // 3. Download Rejected Rows CSV
   const handleDownloadRejectedCsv = () => {
@@ -307,8 +269,8 @@ export const AdminStockImport: React.FC = () => {
 
   return (
     <AdminLayout
-      title="Stock Inventory Import"
-      subtitle="Client FY 2026–27 Excel Stock Report Processor & Safe Catalogue Replacement"
+      title="Stock Import"
+      subtitle="Replace the product catalogue from your stock Excel file."
       actions={
         summary && (
           <div className="flex items-center gap-2">
@@ -316,7 +278,7 @@ export const AdminStockImport: React.FC = () => {
               variant="outline"
               size="sm"
               onClick={handleDownloadCatalogueBackup}
-              className="border-slate-800 text-slate-300 hover:text-white hover:bg-slate-900 gap-1.5 text-xs"
+              className="border-slate-200 text-slate-700 hover:text-slate-900 hover:bg-slate-50 gap-1.5 text-xs"
             >
               <Download className="w-3.5 h-3.5" />
               Backup Current Catalogue
@@ -324,7 +286,7 @@ export const AdminStockImport: React.FC = () => {
             <Button
               onClick={() => setShowConfirmModal(true)}
               disabled={summary.validProductsCount === 0}
-              className="bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold text-xs gap-1.5 shadow-lg shadow-cyan-900/30"
+              className="bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs gap-1.5 shadow-lg "
             >
               <Database className="w-3.5 h-3.5" />
               Stage B: Replace Catalogue
@@ -340,17 +302,16 @@ export const AdminStockImport: React.FC = () => {
           <div
             className={`p-5 rounded-2xl border ${
               executionReport.success
-                ? 'bg-emerald-950/40 border-emerald-800 text-emerald-200'
-                : 'bg-rose-950/40 border-rose-800 text-rose-200'
+                ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : 'bg-rose-50 border-rose-200 text-rose-700'
             } space-y-2 backdrop-blur-md`}
           >
             <div className="flex items-center gap-2.5">
               {executionReport.success ? (
-                <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
+                <CheckCircle2 className="w-5 h-5 text-emerald-700 shrink-0" />
               ) : (
-                <AlertCircle className="w-5 h-5 text-rose-400 shrink-0" />
+                <AlertCircle className="w-5 h-5 text-rose-700 shrink-0" />
               )}
-              <h3 className="font-bold text-base text-white font-['Outfit']">
+              <h3 className="font-bold text-base text-slate-900 font-['Outfit']">
                 {executionReport.success
                   ? 'Catalogue Replacement Executed Successfully!'
                   : 'Catalogue Replacement Failed — Safe Rollback Executed'}
@@ -368,18 +329,18 @@ export const AdminStockImport: React.FC = () => {
         )}
 
         {/* Upload & Source Controls */}
-        <div className="rounded-2xl border border-slate-800 bg-slate-950/60 p-6 backdrop-blur-md space-y-4">
+        <div className="rounded-2xl border border-slate-200 bg-white p-6 backdrop-blur-md space-y-4">
           <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
             <div>
               <div className="flex items-center gap-2">
-                <FileSpreadsheet className="w-5 h-5 text-cyan-400" />
-                <h2 className="text-base font-bold text-white font-['Outfit']">
-                  FY 2026–27 Stock Workbook Ingestion
+                <FileSpreadsheet className="w-5 h-5 text-cyan-700" />
+                <h2 className="text-base font-bold text-slate-900 font-['Outfit']">
+                  Upload your stock report
                 </h2>
               </div>
-              <p className="text-xs text-slate-400 mt-1 max-w-2xl leading-relaxed">
-                Upload the client's official stock workbook (<code className="text-cyan-300">.xls</code>, <code className="text-cyan-300">.xlsx</code>, or <code className="text-cyan-300">.csv</code>). 
-                The system extracts exact Selling Cost, Closing Balance Qty, and validates financial integrity in preview mode before any database modifications.
+              <p className="text-xs text-slate-500 mt-1 max-w-2xl leading-relaxed">
+                Choose the stock Excel file (.xls, .xlsx or .csv). You'll see a preview first; nothing changes on the website until you confirm.
+                A backup of the current catalogue is saved before anything is replaced.
               </p>
             </div>
 
@@ -394,41 +355,17 @@ export const AdminStockImport: React.FC = () => {
               />
               <label
                 htmlFor="stock-upload-input"
-                className="flex-1 md:flex-none flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-semibold text-xs transition-colors cursor-pointer shadow-md shadow-cyan-900/30"
+                className="flex-1 md:flex-none flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-semibold text-xs transition-colors cursor-pointer shadow-md "
               >
-                <UploadCloud className="w-4 h-4" />
-                <span>Upload Stock File</span>
+                {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <UploadCloud className="w-4 h-4" />}
+                <span>Choose Excel file</span>
               </label>
-
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleLoadDefaultWorkbook}
-                disabled={loading}
-                className="border-slate-800 text-slate-300 hover:bg-slate-900 hover:text-white text-xs gap-1.5"
-                title="Directly load product_List (1).xls from project root"
-              >
-                {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
-                <span>Load Default File</span>
-              </Button>
-
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleLoadClientXiaomiSheet}
-                disabled={loading}
-                className="border-blue-800/80 bg-blue-950/40 text-blue-300 hover:bg-blue-900/60 hover:text-white text-xs gap-1.5"
-                title="Load official client entry sheet with 3 variants per model"
-              >
-                {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Layers className="w-3.5 h-3.5 text-blue-400" />}
-                <span>Load Xiaomi / Redmi Spec Sheet</span>
-              </Button>
             </div>
           </div>
 
           {parsingError && (
-            <div className="p-3.5 rounded-xl bg-rose-950/40 border border-rose-800/80 text-rose-300 text-xs flex items-center gap-2">
-              <XCircle className="w-4 h-4 shrink-0 text-rose-400" />
+            <div className="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center gap-2">
+              <XCircle className="w-4 h-4 shrink-0 text-rose-700" />
               <span>{parsingError}</span>
             </div>
           )}
@@ -437,8 +374,8 @@ export const AdminStockImport: React.FC = () => {
         {/* Loading Spinner */}
         {loading && (
           <div className="py-20 text-center space-y-3">
-            <Loader2 className="w-8 h-8 text-cyan-400 animate-spin mx-auto" />
-            <p className="text-sm font-semibold text-white font-['Outfit']">
+            <Loader2 className="w-8 h-8 text-cyan-700 animate-spin mx-auto" />
+            <p className="text-sm font-semibold text-slate-900 font-['Outfit']">
               Parsing Excel workbook & validating financial constraints...
             </p>
             <p className="text-xs text-slate-500">
@@ -453,45 +390,45 @@ export const AdminStockImport: React.FC = () => {
             
             {/* KPI Metrics Grid */}
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-              <div className="p-4 rounded-xl bg-slate-950/80 border border-slate-800 space-y-1">
-                <span className="text-[10px] uppercase font-bold text-slate-400">Source Rows</span>
-                <p className="text-2xl font-extrabold text-white font-mono">{summary.totalSourceRows}</p>
+              <div className="p-4 rounded-xl bg-white border border-slate-200 space-y-1">
+                <span className="text-[10px] uppercase font-bold text-slate-500">Source Rows</span>
+                <p className="text-2xl font-extrabold text-slate-900 font-mono">{summary.totalSourceRows}</p>
                 <span className="text-[10px] text-slate-500">FY 2026-27 Sheet</span>
               </div>
 
-              <div className="p-4 rounded-xl bg-slate-950/80 border border-emerald-900/40 space-y-1">
-                <span className="text-[10px] uppercase font-bold text-emerald-400">Valid Products</span>
-                <p className="text-2xl font-extrabold text-emerald-300 font-mono">{summary.validProductsCount}</p>
+              <div className="p-4 rounded-xl bg-white border border-emerald-200 space-y-1">
+                <span className="text-[10px] uppercase font-bold text-emerald-700">Valid Products</span>
+                <p className="text-2xl font-extrabold text-emerald-700 font-mono">{summary.validProductsCount}</p>
                 <span className="text-[10px] text-emerald-500/80">Approved for Import</span>
               </div>
 
-              <div className="p-4 rounded-xl bg-slate-950/80 border border-rose-900/40 space-y-1">
-                <span className="text-[10px] uppercase font-bold text-rose-400">Rejected Rows</span>
-                <p className="text-2xl font-extrabold text-rose-300 font-mono">{summary.invalidRowsCount}</p>
+              <div className="p-4 rounded-xl bg-white border border-rose-200 space-y-1">
+                <span className="text-[10px] uppercase font-bold text-rose-700">Rejected Rows</span>
+                <p className="text-2xl font-extrabold text-rose-700 font-mono">{summary.invalidRowsCount}</p>
                 <button
                   onClick={handleDownloadRejectedCsv}
-                  className="text-[10px] text-cyan-400 hover:underline flex items-center gap-1 mt-0.5"
+                  className="text-[10px] text-cyan-700 hover:underline flex items-center gap-1 mt-0.5"
                 >
                   <Download className="w-2.5 h-2.5" />
                   Download CSV
                 </button>
               </div>
 
-              <div className="p-4 rounded-xl bg-slate-950/80 border border-slate-800 space-y-1">
-                <span className="text-[10px] uppercase font-bold text-amber-400">Zero Stock</span>
-                <p className="text-2xl font-extrabold text-amber-300 font-mono">{summary.zeroStockCount}</p>
+              <div className="p-4 rounded-xl bg-white border border-slate-200 space-y-1">
+                <span className="text-[10px] uppercase font-bold text-amber-700">Zero Stock</span>
+                <p className="text-2xl font-extrabold text-amber-700 font-mono">{summary.zeroStockCount}</p>
                 <span className="text-[10px] text-amber-500/80">Marked Out of Stock</span>
               </div>
 
-              <div className="p-4 rounded-xl bg-slate-950/80 border border-slate-800 space-y-1">
-                <span className="text-[10px] uppercase font-bold text-indigo-400">In Stock</span>
-                <p className="text-2xl font-extrabold text-indigo-300 font-mono">{summary.positiveStockCount}</p>
-                <span className="text-[10px] text-indigo-400/80">Available in Store</span>
+              <div className="p-4 rounded-xl bg-white border border-slate-200 space-y-1">
+                <span className="text-[10px] uppercase font-bold text-indigo-700">In Stock</span>
+                <p className="text-2xl font-extrabold text-indigo-700 font-mono">{summary.positiveStockCount}</p>
+                <span className="text-[10px] text-indigo-700">Available in Store</span>
               </div>
 
-              <div className="p-4 rounded-xl bg-slate-950/80 border border-slate-800 space-y-1">
-                <span className="text-[10px] uppercase font-bold text-cyan-400">Duplicates</span>
-                <p className="text-2xl font-extrabold text-white font-mono">
+              <div className="p-4 rounded-xl bg-white border border-slate-200 space-y-1">
+                <span className="text-[10px] uppercase font-bold text-cyan-700">Duplicates</span>
+                <p className="text-2xl font-extrabold text-slate-900 font-mono">
                   {summary.exactDuplicateCount}
                   <span className="text-xs text-slate-500 font-normal"> / {summary.possibleModelDuplicatesCount}</span>
                 </p>
@@ -501,14 +438,14 @@ export const AdminStockImport: React.FC = () => {
 
             {/* Stage A Notice & Rejected Rows Alert */}
             {summary.invalidRowsCount > 0 && (
-              <div className="p-4 rounded-xl bg-amber-950/30 border border-amber-800/70 text-amber-200 text-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+              <div className="p-4 rounded-xl bg-amber-50 border border-amber-200 text-amber-700 text-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                 <div className="flex items-center gap-2.5">
-                  <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0" />
+                  <AlertTriangle className="w-5 h-5 text-amber-700 shrink-0" />
                   <div>
                     <span className="font-bold">
                       {summary.invalidRowsCount} malformed / invalid rows detected and excluded from import.
                     </span>
-                    <p className="text-[11px] text-amber-300/80 mt-0.5">
+                    <p className="text-[11px] text-amber-700 mt-0.5">
                       Excluded items with negative stock, missing selling prices, or credit note records.
                     </p>
                   </div>
@@ -517,7 +454,7 @@ export const AdminStockImport: React.FC = () => {
                   size="sm"
                   variant="outline"
                   onClick={handleDownloadRejectedCsv}
-                  className="border-amber-700 bg-amber-950/50 hover:bg-amber-900/60 text-amber-100 text-xs gap-1.5 shrink-0"
+                  className="border-amber-200 bg-amber-50 hover:bg-amber-50 text-amber-100 text-xs gap-1.5 shrink-0"
                 >
                   <Download className="w-3.5 h-3.5" />
                   Download Rejection Report (CSV)
@@ -527,21 +464,21 @@ export const AdminStockImport: React.FC = () => {
 
             {/* Flipkart / Amazon Multi-Variant Architecture Active Callout */}
             {summary.items.some((i) => i.variants && i.variants.length > 0) && (
-              <div className="p-4 rounded-xl bg-gradient-to-r from-blue-950/60 via-indigo-950/40 to-slate-900 border border-blue-800/60 text-slate-200 text-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-lg">
+              <div className="p-4 rounded-xl bg-blue-50 border border-blue-200 text-slate-800 text-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-lg">
                 <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-blue-600/20 border border-blue-500/40 flex items-center justify-center shrink-0">
-                    <Layers className="w-5 h-5 text-blue-400" />
+                  <div className="w-9 h-9 rounded-xl bg-blue-600/20 border border-blue-200 flex items-center justify-center shrink-0">
+                    <Layers className="w-5 h-5 text-blue-700" />
                   </div>
                   <div>
                     <div className="flex items-center gap-2">
-                      <span className="font-bold text-white text-sm font-['Outfit']">
+                      <span className="font-bold text-slate-900 text-sm font-['Outfit']">
                         Amazon & Flipkart Multi-Variant Architecture Active
                       </span>
-                      <span className="text-[10px] bg-blue-900 text-blue-200 border border-blue-700 px-2 py-0.5 rounded-full font-bold">
+                      <span className="text-[10px] bg-blue-50 text-blue-700 border border-blue-200 px-2 py-0.5 rounded-full font-bold">
                         Consolidated
                       </span>
                     </div>
-                    <p className="text-[11px] text-slate-300/90 mt-0.5">
+                    <p className="text-[11px] text-slate-700 mt-0.5">
                       Instead of creating repetitive cards for every RAM/storage configuration, all {summary.items.filter((i) => i.variants && i.variants.length > 0).length} multi-variant models are consolidated into single parent models with dynamic variant switching and distinct price tiers.
                     </p>
                   </div>
@@ -550,7 +487,7 @@ export const AdminStockImport: React.FC = () => {
             )}
 
             {/* Filter Bar & Controls */}
-            <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3 p-4 rounded-xl bg-slate-950/70 border border-slate-800">
+            <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3 p-4 rounded-xl bg-white border border-slate-200">
               
               {/* Search Box */}
               <div className="relative flex-1 max-w-md">
@@ -560,7 +497,7 @@ export const AdminStockImport: React.FC = () => {
                   placeholder="Search by product name, brand, SKU or HSN..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full bg-slate-900 border border-slate-800 rounded-lg pl-9 pr-3 py-1.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-cyan-500"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-lg pl-9 pr-3 py-1.5 text-xs text-slate-800 placeholder-slate-500 focus:outline-none focus:border-cyan-500"
                 />
               </div>
 
@@ -570,8 +507,7 @@ export const AdminStockImport: React.FC = () => {
                   onClick={() => setActiveFilter('all')}
                   className={`px-3 py-1.5 rounded-lg font-medium transition-colors ${
                     activeFilter === 'all'
-                      ? 'bg-cyan-950 text-cyan-300 border border-cyan-800'
-                      : 'text-slate-400 hover:text-slate-200'
+                      ? 'bg-cyan-50 text-cyan-700 border border-cyan-200' : 'text-slate-500 hover:text-slate-800'
                   }`}
                 >
                   All ({summary.validProductsCount})
@@ -580,8 +516,7 @@ export const AdminStockImport: React.FC = () => {
                   onClick={() => setActiveFilter('zero-stock')}
                   className={`px-3 py-1.5 rounded-lg font-medium transition-colors ${
                     activeFilter === 'zero-stock'
-                      ? 'bg-amber-950 text-amber-300 border border-amber-800'
-                      : 'text-slate-400 hover:text-slate-200'
+                      ? 'bg-amber-50 text-amber-700 border border-amber-200' : 'text-slate-500 hover:text-slate-800'
                   }`}
                 >
                   Zero Stock ({summary.zeroStockCount})
@@ -590,8 +525,7 @@ export const AdminStockImport: React.FC = () => {
                   onClick={() => setActiveFilter('review-category')}
                   className={`px-3 py-1.5 rounded-lg font-medium transition-colors ${
                     activeFilter === 'review-category'
-                      ? 'bg-indigo-950 text-indigo-300 border border-indigo-800'
-                      : 'text-slate-400 hover:text-slate-200'
+                      ? 'bg-indigo-50 text-indigo-700 border border-indigo-200' : 'text-slate-500 hover:text-slate-800'
                   }`}
                 >
                   Review Categories ({summary.ambiguousCategoriesCount})
@@ -600,8 +534,7 @@ export const AdminStockImport: React.FC = () => {
                   onClick={() => setActiveFilter('missing-image')}
                   className={`px-3 py-1.5 rounded-lg font-medium transition-colors ${
                     activeFilter === 'missing-image'
-                      ? 'bg-slate-800 text-slate-200 border border-slate-700'
-                      : 'text-slate-400 hover:text-slate-200'
+                      ? 'bg-slate-100 text-slate-800 border border-slate-300' : 'text-slate-500 hover:text-slate-800'
                   }`}
                 >
                   Missing Image ({summary.missingImagesCount})
@@ -612,7 +545,7 @@ export const AdminStockImport: React.FC = () => {
               <select
                 value={selectedCategoryFilter}
                 onChange={(e) => setSelectedCategoryFilter(e.target.value)}
-                className="bg-slate-900 border border-slate-800 text-slate-300 rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:border-cyan-500"
+                className="bg-slate-50 border border-slate-200 text-slate-700 rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:border-cyan-500"
               >
                 <option value="all">All Categories</option>
                 <option value="smartphones">Smartphones ({summary.categoryDistribution['smartphones'] || 0})</option>
@@ -625,10 +558,10 @@ export const AdminStockImport: React.FC = () => {
             </div>
 
             {/* Products Preview Table */}
-            <div className="rounded-2xl border border-slate-800 bg-slate-950/70 overflow-hidden shadow-xl">
+            <div className="rounded-2xl border border-slate-200 bg-white overflow-hidden shadow-sm">
               <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs text-slate-300">
-                  <thead className="bg-slate-900/90 text-slate-400 font-semibold border-b border-slate-800 select-none">
+                <table className="w-full text-left text-xs text-slate-700">
+                  <thead className="bg-slate-50 text-slate-500 font-semibold border-b border-slate-200 select-none">
                     <tr>
                       <th className="py-3 px-3 w-12 text-center">Row</th>
                       <th className="py-3 px-3 w-14">Media</th>
@@ -652,7 +585,7 @@ export const AdminStockImport: React.FC = () => {
                       filteredItems.map((item) => (
                         <tr
                           key={item.id}
-                          className="hover:bg-slate-900/50 transition-colors group cursor-pointer"
+                          className="hover:bg-slate-50 transition-colors group cursor-pointer"
                           onClick={() => setInspectingItem(item)}
                         >
                           <td className="py-3 px-3 text-center font-mono text-slate-500 text-[11px]">
@@ -661,7 +594,7 @@ export const AdminStockImport: React.FC = () => {
 
                           {/* Media Thumbnail */}
                           <td className="py-3 px-3">
-                            <div className="w-10 h-10 rounded-lg bg-slate-900 border border-slate-800 p-0.5 flex items-center justify-center overflow-hidden">
+                            <div className="w-10 h-10 rounded-lg bg-slate-50 border border-slate-200 p-0.5 flex items-center justify-center overflow-hidden">
                               <img
                                 src={item.image}
                                 alt={item.name}
@@ -672,25 +605,25 @@ export const AdminStockImport: React.FC = () => {
 
                           {/* Product Name */}
                           <td className="py-3 px-4">
-                            <div className="font-semibold text-white group-hover:text-cyan-300 transition-colors line-clamp-1">
+                            <div className="font-semibold text-slate-900 group-hover:text-cyan-700 transition-colors line-clamp-1">
                               {item.name}
                             </div>
-                            <div className="flex items-center gap-2 mt-1 flex-wrap text-[11px] text-slate-400">
+                            <div className="flex items-center gap-2 mt-1 flex-wrap text-[11px] text-slate-500">
                               <span className="font-mono text-slate-500 text-[10px]">{item.sku}</span>
                               {item.variants && item.variants.length > 0 ? (
-                                <span className="bg-gradient-to-r from-blue-950 to-indigo-950 border border-blue-600/50 text-blue-300 font-semibold px-2 py-0.5 rounded-full text-[10px] flex items-center gap-1 shadow-sm">
-                                  <Layers className="w-2.5 h-2.5 text-blue-400" />
+                                <span className="bg-blue-50 border border-blue-600/50 text-blue-700 font-semibold px-2 py-0.5 rounded-full text-[10px] flex items-center gap-1 shadow-sm">
+                                  <Layers className="w-2.5 h-2.5 text-blue-700" />
                                   {item.variants.length} Variants ({item.variants.map((v) => v.name).join(' • ')})
                                 </span>
                               ) : (
                                 <>
                                   {item.variantDetails?.storage && (
-                                    <span className="bg-slate-900 text-slate-400 px-1.5 py-0.2 rounded text-[10px]">
+                                    <span className="bg-slate-50 text-slate-500 px-1.5 py-0.2 rounded text-[10px]">
                                       {item.variantDetails.storage}
                                     </span>
                                   )}
                                   {item.variantDetails?.color && (
-                                    <span className="text-slate-400 text-[10px]">
+                                    <span className="text-slate-500 text-[10px]">
                                       Color: {item.variantDetails.color}
                                     </span>
                                   )}
@@ -700,7 +633,7 @@ export const AdminStockImport: React.FC = () => {
                           </td>
 
                           {/* Brand */}
-                          <td className="py-3 px-3 font-medium text-slate-300">
+                          <td className="py-3 px-3 font-medium text-slate-700">
                             {item.brand}
                           </td>
 
@@ -710,7 +643,7 @@ export const AdminStockImport: React.FC = () => {
                               <select
                                 value={item.category}
                                 onChange={(e) => handleUpdateItemCategory(item.id, e.target.value)}
-                                className="bg-slate-900 border border-slate-800 rounded px-2 py-1 text-[11px] text-slate-200 focus:outline-none focus:border-cyan-500"
+                                className="bg-slate-50 border border-slate-200 rounded px-2 py-1 text-[11px] text-slate-800 focus:outline-none focus:border-cyan-500"
                               >
                                 <option value="smartphones">Smartphones</option>
                                 <option value="smart-tvs">Smart TVs</option>
@@ -721,7 +654,7 @@ export const AdminStockImport: React.FC = () => {
 
                               {item.categoryStatus === 'needs_review' && (
                                 <span
-                                  className="text-[10px] bg-amber-950 border border-amber-800 text-amber-300 px-1.5 py-0.5 rounded font-bold shrink-0"
+                                  className="text-[10px] bg-amber-50 border border-amber-200 text-amber-700 px-1.5 py-0.5 rounded font-bold shrink-0"
                                   title="Original group 'Others' or 'Tablets' mapped by heuristic. Verify category."
                                 >
                                   Review
@@ -731,13 +664,13 @@ export const AdminStockImport: React.FC = () => {
                           </td>
 
                           {/* Selling Price (Exact Selling Cost) */}
-                          <td className="py-3 px-3 text-right font-mono font-bold text-white">
+                          <td className="py-3 px-3 text-right font-mono font-bold text-slate-900">
                             {item.variants && item.variants.length > 1 ? (
                               <div>
-                                <span className="text-[9px] uppercase tracking-wider text-cyan-400 font-bold block font-sans">
+                                <span className="text-[9px] uppercase tracking-wider text-cyan-700 font-bold block font-sans">
                                   From {formatINR(item.sellingPrice)}
                                 </span>
-                                <span className="text-[10px] text-slate-400 font-normal">
+                                <span className="text-[10px] text-slate-500 font-normal">
                                   {formatINR(Math.min(...item.variants.map((v) => v.price ?? 0)))} - {formatINR(Math.max(...item.variants.map((v) => v.price ?? 0)))}
                                 </span>
                               </div>
@@ -749,11 +682,11 @@ export const AdminStockImport: React.FC = () => {
                           {/* Stock Quantity */}
                           <td className="py-3 px-3 text-center">
                             {item.isZeroStock ? (
-                              <span className="inline-block px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-950/80 border border-rose-800 text-rose-300">
+                              <span className="inline-block px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-50 border border-rose-200 text-rose-700">
                                 0 (Out of Stock)
                               </span>
                             ) : (
-                              <span className="font-mono font-bold text-emerald-400">
+                              <span className="font-mono font-bold text-emerald-700">
                                 {item.stockQuantity}
                               </span>
                             )}
@@ -762,12 +695,12 @@ export const AdminStockImport: React.FC = () => {
                           {/* Image Status */}
                           <td className="py-3 px-3 text-center">
                             {item.imageStatus === 'matched' ? (
-                              <span className="inline-flex items-center gap-1 text-[10px] text-emerald-400 font-medium">
+                              <span className="inline-flex items-center gap-1 text-[10px] text-emerald-700 font-medium">
                                 <CheckCircle2 className="w-3 h-3 text-emerald-500" />
                                 Matched
                               </span>
                             ) : item.imageStatus === 'needs_review' ? (
-                              <span className="inline-flex items-center gap-1 text-[10px] text-amber-400 font-medium">
+                              <span className="inline-flex items-center gap-1 text-[10px] text-amber-700 font-medium">
                                 <AlertCircle className="w-3 h-3 text-amber-500" />
                                 Needs Review
                               </span>
@@ -784,7 +717,7 @@ export const AdminStockImport: React.FC = () => {
                               size="sm"
                               variant="ghost"
                               onClick={() => setInspectingItem(item)}
-                              className="text-xs text-cyan-400 hover:text-cyan-300 hover:bg-slate-800 h-7 px-2"
+                              className="text-xs text-cyan-700 hover:text-cyan-700 hover:bg-slate-100 h-7 px-2"
                             >
                               <Eye className="w-3.5 h-3.5" />
                             </Button>
@@ -802,55 +735,55 @@ export const AdminStockImport: React.FC = () => {
 
         {/* Item Inspection & Datasheet Match Modal */}
         {inspectingItem && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md">
-            <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-2xl w-full p-6 space-y-5 text-slate-200 max-h-[90vh] overflow-y-auto shadow-2xl">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-white backdrop-blur-md">
+            <div className="bg-slate-50 border border-slate-200 rounded-2xl max-w-2xl w-full p-6 space-y-5 text-slate-800 max-h-[90vh] overflow-y-auto shadow-sm">
               
-              <div className="flex items-start justify-between border-b border-slate-800 pb-4">
+              <div className="flex items-start justify-between border-b border-slate-200 pb-4">
                 <div>
-                  <span className="text-[10px] uppercase font-bold text-cyan-400 tracking-wider">
+                  <span className="text-[10px] uppercase font-bold text-cyan-700 tracking-wider">
                     Product Details • Row #{inspectingItem.rowNumber}
                   </span>
-                  <h3 className="text-lg font-bold text-white font-['Outfit'] mt-0.5">
+                  <h3 className="text-lg font-bold text-slate-900 font-['Outfit'] mt-0.5">
                     {inspectingItem.name}
                   </h3>
                   <span className="font-mono text-xs text-slate-500">{inspectingItem.sku}</span>
                 </div>
                 <button
                   onClick={() => setInspectingItem(null)}
-                  className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800"
+                  className="p-1 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-100"
                 >
                   <XCircle className="w-5 h-5" />
                 </button>
               </div>
 
               {/* Data comparison block */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-4 rounded-xl bg-slate-950 border border-slate-800 text-xs">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-4 rounded-xl bg-white border border-slate-200 text-xs">
                 <div>
                   <span className="text-slate-500 block">Selling Cost (Price):</span>
-                  <span className="font-mono font-bold text-white text-sm">{formatINR(inspectingItem.sellingPrice)}</span>
+                  <span className="font-mono font-bold text-slate-900 text-sm">{formatINR(inspectingItem.sellingPrice)}</span>
                 </div>
                 <div>
                   <span className="text-slate-500 block">Closing Balance (Stock):</span>
-                  <span className={`font-mono font-bold text-sm ${inspectingItem.isZeroStock ? 'text-rose-400' : 'text-emerald-400'}`}>
+                  <span className={`font-mono font-bold text-sm ${inspectingItem.isZeroStock ? 'text-rose-700' : 'text-emerald-700'}`}>
                     {inspectingItem.stockQuantity} {inspectingItem.isZeroStock ? '(Out of Stock)' : 'units'}
                   </span>
                 </div>
                 <div>
                   <span className="text-slate-500 block">Original Group:</span>
-                  <span className="text-slate-300 font-medium">{inspectingItem.originalGroup}</span>
+                  <span className="text-slate-700 font-medium">{inspectingItem.originalGroup}</span>
                 </div>
                 <div>
                   <span className="text-slate-500 block">HSN / GST:</span>
-                  <span className="text-slate-300 font-mono">{inspectingItem.hsn || 'N/A'} {inspectingItem.gstPercent ? `(${inspectingItem.gstPercent}%)` : ''}</span>
+                  <span className="text-slate-700 font-mono">{inspectingItem.hsn || 'N/A'} {inspectingItem.gstPercent ? `(${inspectingItem.gstPercent}%)` : ''}</span>
                 </div>
               </div>
 
               {/* Open Icecat Lookup Trigger */}
-              <div className="p-4 rounded-xl bg-slate-950/60 border border-slate-800 space-y-3">
+              <div className="p-4 rounded-xl bg-white border border-slate-200 space-y-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <Sparkles className="w-4 h-4 text-cyan-400" />
-                    <span className="text-xs font-bold text-white">Datasheet & Studio Photo Matching</span>
+                    <Sparkles className="w-4 h-4 text-cyan-700" />
+                    <span className="text-xs font-bold text-slate-900">Datasheet & Studio Photo Matching</span>
                   </div>
                   <Button
                     size="sm"
@@ -864,7 +797,7 @@ export const AdminStockImport: React.FC = () => {
                 </div>
 
                 {lookupMessage && (
-                  <p className="text-xs text-cyan-300/90 bg-cyan-950/40 p-2.5 rounded-lg border border-cyan-800/60">
+                  <p className="text-xs text-cyan-700 bg-cyan-50 p-2.5 rounded-lg border border-cyan-200">
                     {lookupMessage}
                   </p>
                 )}
@@ -872,12 +805,12 @@ export const AdminStockImport: React.FC = () => {
                 {/* Specs List */}
                 {inspectingItem.specs && inspectingItem.specs.length > 0 && (
                   <div className="space-y-1.5 pt-2">
-                    <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Specifications:</span>
+                    <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Specifications:</span>
                     <div className="grid grid-cols-2 gap-2 text-xs">
                       {inspectingItem.specs.map((sp, idx) => (
-                        <div key={idx} className="p-2 rounded bg-slate-900 border border-slate-800">
-                          <span className="text-slate-400 block text-[10px]">{sp.label}</span>
-                          <span className="text-white font-medium">{sp.value}</span>
+                        <div key={idx} className="p-2 rounded bg-slate-50 border border-slate-200">
+                          <span className="text-slate-500 block text-[10px]">{sp.label}</span>
+                          <span className="text-slate-900 font-medium">{sp.value}</span>
                         </div>
                       ))}
                     </div>
@@ -887,22 +820,22 @@ export const AdminStockImport: React.FC = () => {
 
               {/* Consolidated Variants (Flipkart / Amazon Model Architecture) */}
               {inspectingItem.variants && inspectingItem.variants.length > 0 && (
-                <div className="p-4 rounded-xl bg-gradient-to-br from-blue-950/40 to-indigo-950/30 border border-blue-800/50 space-y-3">
+                <div className="p-4 rounded-xl bg-blue-50 border border-blue-200 space-y-3">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <Layers className="w-4 h-4 text-cyan-400" />
-                      <span className="text-xs font-bold text-white font-['Outfit']">
+                      <Layers className="w-4 h-4 text-cyan-700" />
+                      <span className="text-xs font-bold text-slate-900 font-['Outfit']">
                         Consolidated Model Variants ({inspectingItem.variants.length})
                       </span>
                     </div>
-                    <span className="text-[10px] font-semibold text-blue-300 bg-blue-900/50 border border-blue-700/60 px-2.5 py-0.5 rounded-full">
+                    <span className="text-[10px] font-semibold text-blue-700 bg-blue-50 border border-blue-200 px-2.5 py-0.5 rounded-full">
                       Flipkart / Amazon Architecture
                     </span>
                   </div>
-                  <div className="overflow-x-auto rounded-lg border border-slate-800/80">
+                  <div className="overflow-x-auto rounded-lg border border-slate-200/80">
                     <table className="w-full text-left text-xs border-collapse">
                       <thead>
-                        <tr className="border-b border-slate-800 bg-slate-950/70 text-[10px] uppercase font-bold text-slate-400">
+                        <tr className="border-b border-slate-200 bg-white text-[10px] uppercase font-bold text-slate-500">
                           <th className="py-2 px-3">Variant</th>
                           <th className="py-2 px-3">SKU</th>
                           <th className="py-2 px-3 text-right">Selling Price</th>
@@ -910,16 +843,16 @@ export const AdminStockImport: React.FC = () => {
                           <th className="py-2 px-3 text-center">Stock Units</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-slate-800/60 font-mono text-[11px]">
+                      <tbody className="divide-y divide-slate-200/60 font-mono text-[11px]">
                         {inspectingItem.variants.map((v) => (
-                          <tr key={v.id} className="hover:bg-slate-900/50 transition-colors">
-                            <td className="py-2 px-3 font-sans font-semibold text-white">
+                          <tr key={v.id} className="hover:bg-slate-50 transition-colors">
+                            <td className="py-2 px-3 font-sans font-semibold text-slate-900">
                               {v.name}
                             </td>
-                            <td className="py-2 px-3 text-slate-400 text-[10px]">
+                            <td className="py-2 px-3 text-slate-500 text-[10px]">
                               {v.sku}
                             </td>
-                            <td className="py-2 px-3 text-right font-bold text-emerald-400">
+                            <td className="py-2 px-3 text-right font-bold text-emerald-700">
                               {formatINR(v.price ?? 0)}
                             </td>
                             <td className="py-2 px-3 text-right text-slate-500 line-through">
@@ -927,9 +860,9 @@ export const AdminStockImport: React.FC = () => {
                             </td>
                             <td className="py-2 px-3 text-center">
                               {v.inStock ? (
-                                <span className="text-emerald-400 font-bold">{v.stockQuantity}</span>
+                                <span className="text-emerald-700 font-bold">{v.stockQuantity}</span>
                               ) : (
-                                <span className="text-rose-400 font-bold">0</span>
+                                <span className="text-rose-700 font-bold">0</span>
                               )}
                             </td>
                           </tr>
@@ -945,7 +878,7 @@ export const AdminStockImport: React.FC = () => {
                   variant="outline"
                   size="sm"
                   onClick={() => setInspectingItem(null)}
-                  className="border-slate-800 text-slate-300"
+                  className="border-slate-200 text-slate-700"
                 >
                   Close
                 </Button>
@@ -957,44 +890,44 @@ export const AdminStockImport: React.FC = () => {
 
         {/* Stage B Confirmation Modal */}
         {showConfirmModal && summary && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-md">
-            <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-lg w-full p-6 space-y-5 text-slate-200 shadow-2xl">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-white backdrop-blur-md">
+            <div className="bg-slate-50 border border-slate-200 rounded-2xl max-w-lg w-full p-6 space-y-5 text-slate-800 shadow-sm">
               
-              <div className="flex items-center gap-3 text-amber-400">
-                <div className="w-10 h-10 rounded-xl bg-amber-950/80 border border-amber-800 flex items-center justify-center shrink-0">
-                  <ShieldAlert className="w-5 h-5 text-amber-400" />
+              <div className="flex items-center gap-3 text-amber-700">
+                <div className="w-10 h-10 rounded-xl bg-amber-50 border border-amber-200 flex items-center justify-center shrink-0">
+                  <ShieldAlert className="w-5 h-5 text-amber-700" />
                 </div>
                 <div>
-                  <h3 className="text-base font-bold text-white font-['Outfit']">
+                  <h3 className="text-base font-bold text-slate-900 font-['Outfit']">
                     Confirm Safe Catalogue Replacement
                   </h3>
-                  <span className="text-xs text-slate-400">Stage B Transactional Execution</span>
+                  <span className="text-xs text-slate-500">Stage B Transactional Execution</span>
                 </div>
               </div>
 
-              <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 text-xs space-y-2">
-                <p className="text-slate-300 leading-relaxed">
-                  You are about to replace the live showroom product catalogue with the validated client inventory from <strong className="text-white">{summary.fileName}</strong>.
+              <div className="p-4 rounded-xl bg-white border border-slate-200 text-xs space-y-2">
+                <p className="text-slate-700 leading-relaxed">
+                  You are about to replace the live showroom product catalogue with the validated client inventory from <strong className="text-slate-900">{summary.fileName}</strong>.
                 </p>
-                <ul className="space-y-1 text-slate-400 list-disc pl-4">
+                <ul className="space-y-1 text-slate-500 list-disc pl-4">
                   <li>A durable snapshot backup of the existing catalogue will be created first.</li>
-                  <li><strong className="text-white">{summary.validProductsCount} valid products</strong> will be imported.</li>
-                  <li><strong className="text-amber-400">{summary.zeroStockCount} zero-stock products</strong> will be placed in out-of-stock mode.</li>
+                  <li><strong className="text-slate-900">{summary.validProductsCount} valid products</strong> will be imported.</li>
+                  <li><strong className="text-amber-700">{summary.zeroStockCount} zero-stock products</strong> will be placed in out-of-stock mode.</li>
                   <li>Customer orders, admin users, and storage files remain completely untouched.</li>
                   <li>If any database constraint fails, the transaction automatically rolls back.</li>
                 </ul>
               </div>
 
               <div className="space-y-2">
-                <label className="text-xs font-semibold text-slate-300 block">
-                  To confirm, type <span className="font-mono text-cyan-400">CONFIRM REPLACE</span> below:
+                <label className="text-xs font-semibold text-slate-700 block">
+                  To confirm, type <span className="font-mono text-cyan-700">CONFIRM REPLACE</span> below:
                 </label>
                 <input
                   type="text"
                   placeholder="CONFIRM REPLACE"
                   value={confirmText}
                   onChange={(e) => setConfirmText(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs font-mono text-white focus:outline-none focus:border-cyan-500 uppercase"
+                  className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs font-mono text-slate-900 focus:outline-none focus:border-cyan-500 uppercase"
                 />
               </div>
 
@@ -1004,7 +937,7 @@ export const AdminStockImport: React.FC = () => {
                   size="sm"
                   onClick={() => setShowConfirmModal(false)}
                   disabled={isExecutingReplacement}
-                  className="border-slate-800 text-slate-300"
+                  className="border-slate-200 text-slate-700"
                 >
                   Cancel
                 </Button>

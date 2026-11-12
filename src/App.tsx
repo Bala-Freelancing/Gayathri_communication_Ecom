@@ -4,12 +4,9 @@ import { StorefrontPage } from '@/pages/StorefrontPage'
 import { CategoryPage } from '@/pages/CategoryPage'
 import { AdminLogin } from '@/pages/admin/AdminLogin'
 import { AdminDashboard } from '@/pages/admin/AdminDashboard'
-import { AdminPrices } from '@/pages/admin/AdminPrices'
 import { AdminProducts } from '@/pages/admin/AdminProducts'
-import { AdminInventory } from '@/pages/admin/AdminInventory'
 import { AdminStockImport } from '@/pages/admin/AdminStockImport'
 import { AdminHeroBanners } from '@/pages/admin/AdminHeroBanners'
-import { AdminSettings } from '@/pages/admin/AdminSettings'
 import { ProtectedRoute } from '@/components/admin/ProtectedRoute'
 import { useAuthStore } from '@/store/useAuthStore'
 
@@ -68,26 +65,10 @@ export function App() {
           }
         />
         <Route
-          path="/admin/prices"
-          element={
-            <ProtectedRoute>
-              <AdminPrices />
-            </ProtectedRoute>
-          }
-        />
-        <Route
           path="/admin/products"
           element={
             <ProtectedRoute>
               <AdminProducts />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/admin/inventory"
-          element={
-            <ProtectedRoute>
-              <AdminInventory />
             </ProtectedRoute>
           }
         />
@@ -99,14 +80,11 @@ export function App() {
             </ProtectedRoute>
           }
         />
-        <Route
-          path="/admin/settings"
-          element={
-            <ProtectedRoute>
-              <AdminSettings />
-            </ProtectedRoute>
-          }
-        />
+
+        {/* Old admin pages merged into Products / removed */}
+        <Route path="/admin/prices" element={<Navigate to="/admin/products" replace />} />
+        <Route path="/admin/inventory" element={<Navigate to="/admin/products" replace />} />
+        <Route path="/admin/settings" element={<Navigate to="/admin" replace />} />
 
         {/* Catch-all redirect to storefront */}
         <Route path="*" element={<Navigate to="/" replace />} />
