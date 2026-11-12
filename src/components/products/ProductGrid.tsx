@@ -23,7 +23,7 @@ interface ProductGridProps {
 }
 
 export const ProductGrid: React.FC<ProductGridProps> = ({ hideTitle = false }) => {
-  const { products } = useRealtimeProducts()
+  const { products, isLoading } = useRealtimeProducts()
   const { 
     selectedCategory, 
     setSelectedCategory, 
@@ -291,6 +291,17 @@ export const ProductGrid: React.FC<ProductGridProps> = ({ hideTitle = false }) =
             </div>
           )}
         </>
+      ) : isLoading ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6" aria-busy="true" aria-label="Loading products">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="rounded-3xl bg-white p-4 animate-pulse motion-reduce:animate-none">
+              <div className="aspect-square rounded-2xl bg-neutral-100" />
+              <div className="mt-4 h-3 w-1/3 rounded bg-neutral-100" />
+              <div className="mt-2 h-4 w-3/4 rounded bg-neutral-100" />
+              <div className="mt-3 h-5 w-1/2 rounded bg-neutral-100" />
+            </div>
+          ))}
+        </div>
       ) : (
         <div className="text-center py-12 bg-white border border-neutral-200 rounded-2xl p-6 space-y-3">
           <Search className="w-8 h-8 text-neutral-300 mx-auto" />

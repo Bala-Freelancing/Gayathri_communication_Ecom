@@ -5,7 +5,8 @@ import { useCartStore } from '@/store/useCartStore'
 
 export function useRealtimeProducts() {
   const [products, setProducts] = useState<Product[]>(productService.getAllProducts())
-  const [isLoading, setIsLoading] = useState(false)
+  // Loading until the first catalogue arrives (prevents a "no products" flash).
+  const [isLoading, setIsLoading] = useState(() => productService.getAllProducts().length === 0)
   const [error, setError] = useState<string | null>(null)
   const { syncProductPrices } = useCartStore()
 
@@ -37,6 +38,7 @@ export function useRealtimeProducts() {
       if (isMounted) {
         setProducts(res.data)
         setError(res.error)
+        setIsLoading(false)
         syncProductPrices(res.data)
       }
     })

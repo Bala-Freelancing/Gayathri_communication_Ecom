@@ -1,7 +1,7 @@
 import React from 'react'
-import { motion } from 'framer-motion'
-import { Star, CheckCircle2, Quote } from 'lucide-react'
+import { Star, ExternalLink } from 'lucide-react'
 import { productService } from '@/services/productService'
+import { storeDetails } from '@/data/mockProducts'
 import {
   Accordion,
   AccordionContent,
@@ -10,64 +10,35 @@ import {
 } from '@/components/ui/accordion'
 
 export const ReviewsSection: React.FC = () => {
-  const customerReviews = productService.getCustomerReviews()
   const faqList = productService.getFaqList()
 
   return (
     <section className="py-8 sm:py-10 bg-neutral-50/50 select-none">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
-        {/* Customer Reviews Header */}
-        <div className="text-center max-w-2xl mx-auto mb-8">
-          <h2 className="text-2xl sm:text-3xl font-extrabold text-neutral-900 font-['Outfit'] tracking-tight">
-            Verified Showroom Experiences
-          </h2>
-          <p className="text-xs sm:text-sm text-neutral-600 mt-1.5">
-            Real feedback from verified purchasers across Manachanallur, Thuraiyur, and Tiruchirappalli.
-          </p>
-        </div>
-
-        {/* Reviews Cards - Editorial Layout */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
-          {customerReviews.map((review) => (
-            <motion.div
-              key={review.id}
-              whileHover={{ y: -3 }}
-              transition={{ duration: 0.2 }}
-              className="rounded-3xl bg-white p-6 sm:p-7 flex flex-col justify-between relative overflow-hidden transition-shadow hover:shadow-md"
-            >
-              <div className="relative z-10">
-                {/* Rating score & verified tag */}
-                <div className="flex items-center justify-between mb-4">
-                  <span className="text-amber-700 text-xs font-bold tracking-tight bg-amber-50 px-2.5 py-1 rounded-full">
-                    {review.rating}.0 / 5.0 Rating
-                  </span>
-                  <span className="text-xs font-semibold text-emerald-800 bg-emerald-50 px-2.5 py-1 rounded-full">
-                    Verified Purchase
-                  </span>
-                </div>
-
-                {/* Comment */}
-                <p className="text-sm sm:text-base text-neutral-800 leading-relaxed italic mb-4 font-normal">
-                  "{review.comment}"
-                </p>
-              </div>
-
-              {/* Author & Product */}
-              <div className="pt-4 flex items-center justify-between text-xs relative z-10">
-                <div>
-                  <p className="font-bold text-neutral-900 font-['Outfit'] text-sm">{review.name}</p>
-                  <p className="text-neutral-500 text-xs">{review.location}</p>
-                </div>
-                <div className="text-right">
-                  <span className="text-neutral-900 font-semibold text-xs truncate max-w-[140px] block">
-                    {review.product}
-                  </span>
-                  <span className="text-neutral-600 text-xs">{review.date}</span>
-                </div>
-              </div>
-            </motion.div>
-          ))}
+        {/* Reviews: link to the shop's real Google reviews instead of showing
+            hand-written testimonials (which were not from real customers). */}
+        <div className="mx-auto mb-10 max-w-3xl rounded-3xl bg-white p-6 sm:p-8 flex flex-col sm:flex-row items-start sm:items-center gap-5">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-amber-50">
+            <Star className="h-6 w-6 text-amber-500 fill-amber-500" aria-hidden="true" />
+          </div>
+          <div className="flex-1">
+            <h2 className="text-xl sm:text-2xl font-extrabold text-neutral-900 font-['Outfit'] tracking-tight">
+              What our customers say
+            </h2>
+            <p className="mt-1 text-sm text-neutral-600">
+              Read genuine reviews from customers in Manachanallur and Trichy on Google, or leave your own after your visit.
+            </p>
+          </div>
+          <a
+            href={storeDetails.mapUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex h-11 shrink-0 items-center gap-2 rounded-xl bg-neutral-900 px-5 text-sm font-semibold text-white hover:bg-neutral-800"
+          >
+            Read reviews on Google
+            <ExternalLink className="h-4 w-4" aria-hidden="true" />
+          </a>
         </div>
 
         {/* FAQ Section */}
